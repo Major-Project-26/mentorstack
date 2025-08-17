@@ -120,3 +120,22 @@
     @apply bg-background text-foreground;
   }
 }
+/* app/globals.css */
+@import "tailwindcss";
+@theme {
+  --color-primary: #06a395;
+  --color-primary-light: #33b9ab;
+  --color-primary-dark: #04786d;
+  --color-secondary: #065f46;
+  --color-secondary-light: #2d7a64;
+  --color-secondary-dark: #044634;
+  --color-tertiary: #172A3A;
+  --color-tertiary-light: #3d4e5c;
+  --color-tertiary-dark: #0e1921;
+  --color-neutral: #FFFFFF;
+  --color-neutral-light: #FFFFFF;
+  --color-neutral-dark: #f4f4f4;
+  --color-surface: #d1fae5;
+  --color-surface-light: #e6fcf1;
+  --color-surface-dark: #a8e4c9;
+}
