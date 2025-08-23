@@ -9,9 +9,9 @@ const Sidebar = ({
   menuItems = [
     "Home",
     "Questions",
+    "Chats",
+    "Community",
     "Tags",
-    "Discussions",
-    "Collections",
     "Bookmarks",
     "About Us",
     "Contact",
