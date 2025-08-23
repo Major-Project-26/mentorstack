@@ -12,6 +12,7 @@ const Sidebar = ({
     "Chats",
     "Community",
     "Tags",
+    "Articles",
     "Bookmarks",
     "About Us",
     "Contact",
