@@ -15,7 +15,7 @@ export default function QuestionPage() {
             <span className="text-[var(--color-primary-dark)]">
               MentorStack
             </span>
-            , John Doh
+            , John Doe
           </h2>
 
           {/* Filter Bar */}
@@ -41,7 +41,6 @@ export default function QuestionPage() {
 
           {/* Example Question Card */}
           <div className="bg-[var(--color-neutral)] p-6 rounded-xl shadow-md mb-6 hover:shadow-lg transition">
-            <Link href="/questions/1" className="block">
               <div className="text-sm text-[var(--color-tertiary-light)] mb-2">
                 @Username
               </div>
@@ -63,8 +62,6 @@ export default function QuestionPage() {
                 <span>20 Answers</span>
                 <span>2 mins ago</span>
               </div>
-            </Link>
-
             {/* Answer Button */}
             <div className="mt-4 pt-4 border-t border-[var(--color-neutral-dark)]">
               <Link href="/answer-question?id=1">
@@ -77,7 +74,6 @@ export default function QuestionPage() {
 
           {/* Another Example */}
           <div className="bg-[var(--color-neutral)] p-6 rounded-xl shadow-md mb-6 hover:shadow-lg transition">
-            <Link href="/questions/2" className="block">
               <div className="text-sm text-[var(--color-tertiary-light)] mb-2">
                 @Username
               </div>
@@ -102,12 +98,10 @@ export default function QuestionPage() {
                 <span>5 Answers</span>
                 <span>1 hour ago</span>
               </div>
-            </Link>
-
             {/* Answer Button */}
             <div className="mt-4 pt-4 border-t border-[var(--color-neutral-dark)]">
               <Link href="/answer-question?id=2">
-                <button className="bg-[var(--color-primary)] text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-[var(--color-primary-dark)] transition-colors">
+                <button className="bg-primary justify-center text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary-dark transition-colors">
                   Answer this question
                 </button>
               </Link>
