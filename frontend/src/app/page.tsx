@@ -2,13 +2,39 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { authAPI } from "@/lib/auth-api";
 
 export default function Home() {
   const [tab, setTab] = useState<"login" | "signup">("login");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
   const router = useRouter();
 
   const handleSignupClick = () => {
     router.push('/role-selection');
+  };
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setIsLoading(true);
+
+    try {
+      const result = await authAPI.login({ email, password });
+      
+      // Login successful, redirect based on user role
+      if (result.user.role === 'mentor' || result.user.role === 'mentee') {
+        router.push('/home');
+      } else {
+        router.push('/home'); // Default to home for any other role
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Login failed');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -51,13 +77,22 @@ export default function Home() {
 
           {/* Form */}
           {tab === "login" ? (
-            <form className="space-y-6">
+            <form className="space-y-6" onSubmit={handleLogin}>
+              {error && (
+                <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+                  {error}
+                </div>
+              )}
+              
               <div>
                 <label className="block mb-2 font-medium text-primary-dark">Email address</label>
                 <input
                   type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   placeholder="Enter your email"
                   className="w-full p-4 rounded-xl border-2 border-slate-200 bg-slate-50 focus:outline-none focus:border-emerald-500 focus:bg-white transition"
+                  required
                 />
               </div>
 
@@ -65,8 +100,11 @@ export default function Home() {
                 <label className="block mb-2 font-medium text-primary-dark">Password</label>
                 <input
                   type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter your password"
                   className="w-full p-4 rounded-xl border-2 border-slate-200 bg-slate-50 focus:outline-none focus:border-emerald-500 focus:bg-white transition"
+                  required
                 />
                 <a
                   href="#"
@@ -78,9 +116,10 @@ export default function Home() {
 
               <button
                 type="submit"
-                className="w-full py-4 mt-4 bg-gradient-to-r bg-primary text-white font-semibold rounded-xl shadow-lg hover:bg-secondary transition"
+                disabled={isLoading}
+                className="w-full py-4 mt-4 bg-gradient-to-r bg-primary text-white font-semibold rounded-xl shadow-lg hover:bg-secondary transition disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Sign in
+                {isLoading ? "Signing in..." : "Sign in"}
               </button>
             </form>
           ) : (
