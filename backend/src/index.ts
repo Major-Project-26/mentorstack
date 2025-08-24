@@ -4,7 +4,8 @@ import dotenv from 'dotenv';
 import authRoutes from './middleware/auth';
 import { menteesRouter } from './routes/mentees';
 import { communitiesRouter } from './routes/communities';
-// import { questionsRouter } from './routes/questions';
+import { questionsRouter } from './routes/questions';
+import { articlesRouter } from './routes/articles';
 
 // Load environment variables
 dotenv.config();
@@ -24,7 +25,8 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/api/auth', authRoutes);
 app.use('/api/mentees', menteesRouter);
 app.use('/api/communities', communitiesRouter);
-// app.use('/api/questions', questionsRouter);
+app.use('/api/questions', questionsRouter);
+app.use('/api/articles', articlesRouter);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -42,8 +44,9 @@ app.get('/', (req, res) => {
       '/api/auth/me',
       '/api/mentees',
       '/api/mentees/profile/me',
-      '/api/communities'
-      // '/api/questions'
+      '/api/communities',
+      '/api/questions',
+      '/api/articles'
     ] 
   });
 });

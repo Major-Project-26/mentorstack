@@ -118,6 +118,37 @@ export interface UpdateProfileResponse {
   };
 }
 
+export interface Article {
+  id: number;
+  title: string;
+  content: string;
+  imageUrls: string[];
+  authorName: string;
+  authorBio?: string;
+  authorAvatar?: string;
+  upvotes: number;
+  downvotes: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ArticlesResponse {
+  articles: Article[];
+  pagination: {
+    currentPage: number;
+    totalPages: number;
+    totalArticles: number;
+    hasNextPage: boolean;
+    hasPrevPage: boolean;
+  };
+}
+
+export interface Tag {
+  name: string;
+  count: number;
+  color: string;
+}
+
 class AuthAPI {
   private getHeaders(includeAuth = false): HeadersInit {
     const headers: HeadersInit = {
@@ -374,6 +405,73 @@ class AuthAPI {
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.message || 'Failed to search communities');
+    }
+
+    return response.json();
+  }
+
+  // Articles methods
+  async getArticles(page = 1, limit = 10, category?: string): Promise<ArticlesResponse> {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      limit: limit.toString(),
+    });
+    
+    if (category) {
+      params.append('category', category);
+    }
+
+    const response = await fetch(`${API_BASE_URL}/articles?${params}`, {
+      method: 'GET',
+      headers: this.getHeaders(),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to get articles');
+    }
+
+    return response.json();
+  }
+
+  async getArticle(id: number): Promise<Article> {
+    const response = await fetch(`${API_BASE_URL}/articles/${id}`, {
+      method: 'GET',
+      headers: this.getHeaders(),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to get article');
+    }
+
+    return response.json();
+  }
+
+  async voteOnArticle(articleId: number, voteType: 'upvote' | 'downvote'): Promise<{ message: string }> {
+    const response = await fetch(`${API_BASE_URL}/articles/${articleId}/vote`, {
+      method: 'POST',
+      headers: this.getHeaders(true),
+      body: JSON.stringify({ voteType }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to vote on article');
+    }
+
+    return response.json();
+  }
+
+  async getPopularTags(): Promise<Tag[]> {
+    const response = await fetch(`${API_BASE_URL}/articles/tags/popular`, {
+      method: 'GET',
+      headers: this.getHeaders(),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to get popular tags');
     }
 
     return response.json();

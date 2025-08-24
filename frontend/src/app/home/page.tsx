@@ -1,9 +1,41 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { authAPI, Question } from "../../lib/auth-api";
 
 export default function Home() {
   const router = useRouter();
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchRecentQuestions();
+  }, []);
+
+  const fetchRecentQuestions = async () => {
+    try {
+      setLoading(true);
+      const recentQuestions = await authAPI.getQuestions();
+      setQuestions(recentQuestions.slice(0, 5)); // Show only 5 recent questions
+      setError(null);
+    } catch (err) {
+      console.error('Error fetching questions:', err);
+      setError('Failed to load questions');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    });
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
@@ -18,7 +50,7 @@ export default function Home() {
               <span className="text-xl font-bold text-slate-800">MentorStack</span>
             </div>
             <div className="flex items-center gap-4">
-              <button className="text-slate-600 hover:text-slate-800 font-medium">
+              <button onClick={() => router.push('/profile')} className="text-slate-600 hover:text-slate-800 font-medium">
                 Profile
               </button>
               <button 
@@ -76,28 +108,107 @@ export default function Home() {
             </div>
             <h3 className="text-xl font-semibold text-slate-800 mb-2">Join Communities</h3>
             <p className="text-slate-600 mb-4">Connect with like-minded individuals</p>
-            <button className="w-full py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition">
+            <button 
+              onClick={() => router.push('/community')}
+              className="w-full py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition"
+            >
               Explore Communities
             </button>
           </div>
         </div>
 
-        {/* Recent Activity */}
+        {/* Recent Questions */}
         <div className="bg-white rounded-2xl shadow-lg border border-slate-200 p-8">
-          <h2 className="text-2xl font-bold text-slate-800 mb-6">Recent Activity</h2>
-          <div className="text-center py-12">
-            <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <span className="text-2xl">🌟</span>
-            </div>
-            <h3 className="text-xl font-semibold text-slate-700 mb-2">Nothing here yet!</h3>
-            <p className="text-slate-500 mb-6">Start your journey by asking a question or connecting with mentors.</p>
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-bold text-slate-800">Recent Questions</h2>
             <button 
               onClick={() => router.push('/questions')}
-              className="px-6 py-3 bg-emerald-500 text-white font-medium rounded-lg hover:bg-emerald-600 transition"
+              className="text-emerald-600 hover:text-emerald-700 font-medium"
             >
-              View All Questions
+              View All →
             </button>
           </div>
+          
+          {loading ? (
+            <div className="text-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500 mx-auto"></div>
+              <p className="text-slate-500 mt-2">Loading questions...</p>
+            </div>
+          ) : error ? (
+            <div className="text-center py-8">
+              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-2xl">⚠️</span>
+              </div>
+              <h3 className="text-xl font-semibold text-slate-700 mb-2">Failed to load questions</h3>
+              <p className="text-slate-500 mb-4">{error}</p>
+              <button 
+                onClick={fetchRecentQuestions}
+                className="px-4 py-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition"
+              >
+                Try Again
+              </button>
+            </div>
+          ) : questions.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-2xl">🌟</span>
+              </div>
+              <h3 className="text-xl font-semibold text-slate-700 mb-2">No questions yet!</h3>
+              <p className="text-slate-500 mb-6">Be the first to ask a question and get help from the community.</p>
+              <button 
+                onClick={() => router.push('/ask-question')}
+                className="px-6 py-3 bg-emerald-500 text-white font-medium rounded-lg hover:bg-emerald-600 transition"
+              >
+                Ask Your First Question
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {questions.map((question) => (
+                <div key={question.id} className="p-4 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">
+                  <div className="flex justify-between items-start mb-2">
+                    <h3 className="font-semibold text-slate-800 hover:text-emerald-600 cursor-pointer">
+                      {question.title}
+                    </h3>
+                    <span className="text-sm text-slate-500">{formatDate(question.createdAt)}</span>
+                  </div>
+                  
+                  {question.description && (
+                    <p className="text-slate-600 text-sm mb-3 line-clamp-2">
+                      {question.description.length > 150 
+                        ? question.description.substring(0, 150) + '...' 
+                        : question.description}
+                    </p>
+                  )}
+                  
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4 text-sm text-slate-500">
+                      <span>by {question.authorName}</span>
+                      <span>{question.answerCount || 0} answers</span>
+                    </div>
+                    
+                    {question.tags && question.tags.length > 0 && (
+                      <div className="flex gap-1">
+                        {question.tags.slice(0, 3).map((tag, index) => (
+                          <span 
+                            key={index} 
+                            className="px-2 py-1 bg-emerald-100 text-emerald-700 rounded-md text-xs"
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                        {question.tags.length > 3 && (
+                          <span className="px-2 py-1 bg-slate-100 text-slate-600 rounded-md text-xs">
+                            +{question.tags.length - 3}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>

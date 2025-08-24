@@ -26,30 +26,9 @@ export default function MenteeHomePage() {
           return;
         }
 
-        // Load questions from API (temporarily using mock data)
-        // const questionsData = await authAPI.getQuestions();
-        // setQuestions(questionsData);
-        
-        // Mock data for now
-        setQuestions([
-          {
-            id: 1,
-            title: "How to get Razorpay API test key without entering my bank details?",
-            tags: ["api", "testing", "flutter"],
-            createdAt: new Date().toISOString(),
-            authorName: "Test User",
-            answerCount: 20
-          },
-          {
-            id: 2,
-            title: "Vue 3, mapbox: create multiple mapboxes with v-for",
-            description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
-            tags: ["vue", "mapbox", "javascript"],
-            createdAt: new Date().toISOString(),
-            authorName: "Another User",
-            answerCount: 5
-          }
-        ]);
+        // Load questions from API
+        const questionsData = await authAPI.getQuestions();
+        setQuestions(questionsData);
 
       } catch (error) {
         console.error('Error loading data:', error);

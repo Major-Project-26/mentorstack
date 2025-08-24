@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import { prisma } from '../../lib/prisma';
 
@@ -23,7 +23,7 @@ const authenticateToken = (req: any, res: any, next: any) => {
 };
 
 // Get all questions
-router.get('/', async (req, res) => {
+router.get('/', async (req: any, res: any) => {
   try {
     const questions = await prisma.question.findMany({
       include: {
@@ -57,7 +57,7 @@ router.get('/', async (req, res) => {
 });
 
 // Get question by ID
-router.get('/:id', async (req, res) => {
+router.get('/:id', async (req: any, res: any) => {
   try {
     const questionId = parseInt(req.params.id);
     
