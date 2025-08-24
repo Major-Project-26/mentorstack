@@ -1,48 +1,15 @@
 "use client";
 
 import { useState } from "react";
-<<<<<<< HEAD
 import { useRouter } from "next/navigation";
-import { authAPI } from "@/lib/auth-api";
 
 export default function Home() {
   const [tab, setTab] = useState<"login" | "signup">("login");
-  const [loginData, setLoginData] = useState({ email: "", password: "" });
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
   const router = useRouter();
 
   const handleSignupClick = () => {
     router.push('/role-selection');
   };
-
-  const handleLoginInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setLoginData(prev => ({ ...prev, [name]: value }));
-    if (error) setError(""); // Clear error when user types
-  };
-
-  const handleLoginSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError("");
-
-    try {
-      const result = await authAPI.login(loginData);
-      console.log("Login successful:", result);
-      // Redirect to home page after successful login
-      router.push('/home');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Login failed");
-    } finally {
-      setLoading(false);
-    }
-  };
-=======
-
-export default function Home() {
-  const [tab, setTab] = useState<"login" | "signup">("login");
->>>>>>> aaa24fa6b2b65d5ed93d1ec26ecb25cf260bea40
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 text-slate-700">
@@ -83,24 +50,13 @@ export default function Home() {
           </div>
 
           {/* Form */}
-<<<<<<< HEAD
           {tab === "login" ? (
-            <form className="space-y-6" onSubmit={handleLoginSubmit}>
-              {error && (
-                <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">
-                  {error}
-                </div>
-              )}
-              
+            <form className="space-y-6">
               <div>
                 <label className="block mb-2 font-medium text-primary-dark">Email address</label>
                 <input
                   type="email"
-                  name="email"
-                  value={loginData.email}
-                  onChange={handleLoginInputChange}
                   placeholder="Enter your email"
-                  required
                   className="w-full p-4 rounded-xl border-2 border-slate-200 bg-slate-50 focus:outline-none focus:border-emerald-500 focus:bg-white transition"
                 />
               </div>
@@ -109,48 +65,22 @@ export default function Home() {
                 <label className="block mb-2 font-medium text-primary-dark">Password</label>
                 <input
                   type="password"
-                  name="password"
-                  value={loginData.password}
-                  onChange={handleLoginInputChange}
                   placeholder="Enter your password"
-                  required
                   className="w-full p-4 rounded-xl border-2 border-slate-200 bg-slate-50 focus:outline-none focus:border-emerald-500 focus:bg-white transition"
                 />
-=======
-          <form className="space-y-6">
-            <div>
-              <label className="block mb-2 font-medium text-primary-dark">Email address</label>
-              <input
-                type="email"
-                placeholder="Enter your email"
-                className="w-full p-4 rounded-xl border-2 border-slate-200 bg-slate-50 focus:outline-none focus:border-emerald-500 focus:bg-white transition"
-              />
-            </div>
-
-            <div>
-              <label className="block mb-2 font-medium text-primary-dark">Password</label>
-              <input
-                type="password"
-                placeholder="Enter your password"
-                className="w-full p-4 rounded-xl border-2 border-slate-200 bg-slate-50 focus:outline-none focus:border-emerald-500 focus:bg-white transition"
-              />
-              {tab === "login" && (
->>>>>>> aaa24fa6b2b65d5ed93d1ec26ecb25cf260bea40
                 <a
                   href="#"
                   className="text-primary text-sm font-medium float-right mt-2 hover:underline"
                 >
                   Forgot password?
                 </a>
-<<<<<<< HEAD
               </div>
 
               <button
                 type="submit"
-                disabled={loading}
-                className="w-full py-4 mt-4 bg-gradient-to-r bg-primary text-white font-semibold rounded-xl shadow-lg hover:bg-secondary transition disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full py-4 mt-4 bg-gradient-to-r bg-primary text-white font-semibold rounded-xl shadow-lg hover:bg-secondary transition"
               >
-                {loading ? "Signing in..." : "Sign in"}
+                Sign in
               </button>
             </form>
           ) : (
@@ -172,29 +102,6 @@ export default function Home() {
               </div>
             </div>
           )}
-=======
-              )}
-            </div>
-
-            {tab === "signup" && (
-              <div>
-                <label className="block mb-2 font-medium ">Confirm Password</label>
-                <input
-                  type="password"
-                  placeholder="Confirm your password"
-                  className="w-full p-4 rounded-xl border-2 border-slate-200 bg-slate-50 focus:outline-none focus:border-emerald-500 focus:bg-white transition"
-                />
-              </div>
-            )}
-
-            <button
-              type="submit"
-              className="w-full py-4 mt-4 bg-gradient-to-r bg-primary text-white font-semibold rounded-xl shadow-lg hover:bg-secondary transition"
-            >
-              {tab === "login" ? "Sign in" : "Sign up"}
-            </button>
-          </form>
->>>>>>> aaa24fa6b2b65d5ed93d1ec26ecb25cf260bea40
 
           {/* Divider */}
           <div className="relative my-8 text-center text-slate-400">
