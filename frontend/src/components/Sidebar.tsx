@@ -21,7 +21,6 @@ const Sidebar = ({
   menuItems = [
     { name: "Home", href: "/mentee-home" },
     { name: "Questions", href: "/questions" },
-    { name: "Ask Question", href: "/ask-question" },
     { name: "Community", href: "/community" },
     { name: "Profile", href: "/profile" },
     { name: "Tags", href: "/tags" },

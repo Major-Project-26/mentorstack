@@ -22,12 +22,16 @@ const authenticateToken = (req: any, res: any, next: any) => {
   });
 };
 
-// Get all questions (simplified)
+// Get all questions
 router.get('/', async (req: any, res: any) => {
   try {
     const questions = await prisma.question.findMany({
       include: {
-        mentee: true,
+        mentee: {
+          select: {
+            name: true
+          }
+        },
         answers: true
       },
       orderBy: {
@@ -39,11 +43,11 @@ router.get('/', async (req: any, res: any) => {
       id: question.id,
       title: question.title,
       description: question.body,
-      tags: [],
+      tags: [], // Simplified for now
       createdAt: question.createdAt,
       authorName: question.mentee.name,
       answerCount: question.answers.length,
-      voteScore: 0
+      voteScore: 0 // We'll implement voting later
     }));
 
     res.json(formattedQuestions);
@@ -53,7 +57,7 @@ router.get('/', async (req: any, res: any) => {
   }
 });
 
-// Get question by ID (simplified)
+// Get question by ID
 router.get('/:id', async (req: any, res: any) => {
   try {
     const questionId = parseInt(req.params.id);
@@ -61,7 +65,11 @@ router.get('/:id', async (req: any, res: any) => {
     const question = await prisma.question.findUnique({
       where: { id: questionId },
       include: {
-        mentee: true,
+        mentee: {
+          select: {
+            name: true
+          }
+        },
         answers: true
       }
     });
@@ -91,10 +99,10 @@ router.get('/:id', async (req: any, res: any) => {
       id: question.id,
       title: question.title,
       description: question.body,
-      tags: [],
+      tags: [], // Simplified for now
       createdAt: question.createdAt,
       authorName: question.mentee.name,
-      voteScore: 0,
+      voteScore: 0, // We'll implement voting later
       answers: question.answers.map((answer: any) => {
         let authorName = 'Unknown';
         if (answer.userRole === 'mentor') {
@@ -144,7 +152,7 @@ router.post('/:questionId/answers', authenticateToken, async (req: any, res: any
       return res.status(404).json({ error: 'Question not found' });
     }
 
-    // Create the answer using raw SQL to bypass Prisma type issues
+    // Create the answer using raw SQL for now to bypass Prisma type issues
     const result = await prisma.$executeRaw`
       INSERT INTO "Answer" (body, "questionId", "userId", "userRole", "createdAt", "updatedAt")
       VALUES (${content.trim()}, ${questionId}, ${userId}, ${role}::"Role", NOW(), NOW())
@@ -170,7 +178,7 @@ router.post('/:questionId/answers', authenticateToken, async (req: any, res: any
     }
 
     const responseAnswer = {
-      id: 'created',
+      id: 'created', // We'll get the real ID from a follow-up query if needed
       content: content.trim(),
       authorName: authorName,
       createdAt: new Date(),

@@ -109,7 +109,23 @@ router.get('/', async (req: any, res: any) => {
 router.get('/:id', async (req: any, res: any) => {
   try {
     const articleId = parseInt(req.params.id);
-    
+    // Check for optional auth token to include user vote
+    let currentUserId: number | null = null;
+    let currentUserRole: string | null = null;
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+
+    if (token) {
+      try {
+        const jwt = require('jsonwebtoken');
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret') as any;
+        currentUserId = decoded.userId;
+        currentUserRole = decoded.role;
+      } catch (err) {
+        // ignore invalid token and continue without user vote
+      }
+    }
+
     const article = await prisma.article.findUnique({
       where: { id: articleId },
       include: {
@@ -131,6 +147,13 @@ router.get('/:id', async (req: any, res: any) => {
     const upvotes = article.votes.filter(vote => vote.voteType === 'upvote').length;
     const downvotes = article.votes.filter(vote => vote.voteType === 'downvote').length;
 
+    // Determine current user's vote if available (only mentees can vote on articles)
+    let userVote: 'upvote' | 'downvote' | null = null;
+    if (currentUserId && currentUserRole === 'mentee') {
+      const userVoteRecord = article.votes.find(v => v.menteeId === currentUserId);
+      userVote = userVoteRecord ? (userVoteRecord.voteType as 'upvote' | 'downvote') : null;
+    }
+
     const formattedArticle = {
       id: article.id,
       title: article.title,
@@ -141,6 +164,7 @@ router.get('/:id', async (req: any, res: any) => {
       authorAvatar: article.author.avatarUrl,
       upvotes,
       downvotes,
+      userVote,
       createdAt: article.createdAt,
       updatedAt: article.updatedAt
     };
@@ -237,28 +261,30 @@ router.post('/:id/vote', authenticateToken, async (req: any, res: any) => {
     });
 
     if (existingVote) {
-      // Update existing vote
-      await prisma.articleVote.update({
-        where: {
-          menteeId_articleId: {
-            menteeId: userId,
-            articleId: articleId
-          }
-        },
-        data: {
-          voteType: voteType as 'upvote' | 'downvote'
-        }
-      });
-    } else {
-      // Create new vote
-      await prisma.articleVote.create({
-        data: {
-          menteeId: userId,
-          articleId: articleId,
-          voteType: voteType as 'upvote' | 'downvote'
-        }
-      });
+      // If user clicks the same vote type again, remove the vote (toggle off)
+      if (existingVote.voteType === voteType) {
+        await prisma.articleVote.delete({
+          where: { id: existingVote.id }
+        });
+        return res.json({ message: 'Vote removed successfully' });
+      } else {
+        // Otherwise update the existing vote to the new type
+        await prisma.articleVote.update({
+          where: { id: existingVote.id },
+          data: { voteType: voteType as any }
+        });
+        return res.json({ message: 'Vote updated successfully' });
+      }
     }
+
+    // Create new vote
+    await prisma.articleVote.create({
+      data: {
+        menteeId: userId,
+        articleId: articleId,
+        voteType: voteType as 'upvote' | 'downvote'
+      }
+    });
 
     res.json({ message: 'Vote recorded successfully' });
 

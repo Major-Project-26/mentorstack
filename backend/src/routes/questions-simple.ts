@@ -22,13 +22,26 @@ const authenticateToken = (req: any, res: any, next: any) => {
   });
 };
 
-// Get all questions (simplified)
+// Get all questions
 router.get('/', async (req: any, res: any) => {
   try {
     const questions = await prisma.question.findMany({
       include: {
-        mentee: true,
-        answers: true
+        mentee: {
+          select: {
+            name: true
+          }
+        },
+        answers: true,
+        tags: {
+          include: {
+            tag: {
+              select: {
+                name: true
+              }
+            }
+          }
+        }
       },
       orderBy: {
         createdAt: 'desc'
@@ -39,11 +52,11 @@ router.get('/', async (req: any, res: any) => {
       id: question.id,
       title: question.title,
       description: question.body,
-      tags: [],
+      tags: question.tags.map((qt: any) => qt.tag.name),
       createdAt: question.createdAt,
       authorName: question.mentee.name,
       answerCount: question.answers.length,
-      voteScore: 0
+      voteScore: 0 // We'll implement voting later
     }));
 
     res.json(formattedQuestions);
@@ -53,7 +66,7 @@ router.get('/', async (req: any, res: any) => {
   }
 });
 
-// Get question by ID (simplified)
+// Get question by ID
 router.get('/:id', async (req: any, res: any) => {
   try {
     const questionId = parseInt(req.params.id);
@@ -61,8 +74,21 @@ router.get('/:id', async (req: any, res: any) => {
     const question = await prisma.question.findUnique({
       where: { id: questionId },
       include: {
-        mentee: true,
-        answers: true
+        mentee: {
+          select: {
+            name: true
+          }
+        },
+        answers: true,
+        tags: {
+          include: {
+            tag: {
+              select: {
+                name: true
+              }
+            }
+          }
+        }
       }
     });
 
@@ -91,10 +117,10 @@ router.get('/:id', async (req: any, res: any) => {
       id: question.id,
       title: question.title,
       description: question.body,
-      tags: [],
+      tags: question.tags.map((qt: any) => qt.tag.name),
       createdAt: question.createdAt,
       authorName: question.mentee.name,
-      voteScore: 0,
+      voteScore: 0, // We'll implement voting later
       answers: question.answers.map((answer: any) => {
         let authorName = 'Unknown';
         if (answer.userRole === 'mentor') {
@@ -144,14 +170,15 @@ router.post('/:questionId/answers', authenticateToken, async (req: any, res: any
       return res.status(404).json({ error: 'Question not found' });
     }
 
-    // Create the answer using raw SQL to bypass Prisma type issues
-    const result = await prisma.$executeRaw`
-      INSERT INTO "Answer" (body, "questionId", "userId", "userRole", "createdAt", "updatedAt")
-      VALUES (${content.trim()}, ${questionId}, ${userId}, ${role}::"Role", NOW(), NOW())
-      RETURNING id
-    `;
-
-    console.log('Answer created via raw SQL:', result);
+    // Create the answer
+    const answer = await prisma.answer.create({
+      data: {
+        body: content.trim(),
+        questionId: questionId,
+        userId: userId,
+        userRole: role
+      }
+    });
 
     // Get author name based on role
     let authorName = 'Unknown';
@@ -170,10 +197,10 @@ router.post('/:questionId/answers', authenticateToken, async (req: any, res: any
     }
 
     const responseAnswer = {
-      id: 'created',
-      content: content.trim(),
+      id: answer.id,
+      content: answer.body,
       authorName: authorName,
-      createdAt: new Date(),
+      createdAt: answer.createdAt,
       voteScore: 0
     };
 
