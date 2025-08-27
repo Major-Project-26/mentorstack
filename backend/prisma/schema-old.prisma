@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -9,20 +6,6 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
-
-// ENUMs (optional but helpful)
-enum Role {
-  mentor
-  mentee
-  admin
-}
-
-enum VoteType {
-  upvote
-  downvote
-}
-
-// Core Role Tables
 
 model Mentor {
   id                 Int                 @id @default(autoincrement())
@@ -35,7 +18,6 @@ model Mentor {
   updatedAt          DateTime            @updatedAt
   reputation         Int                 @default(0)
   articles           Article[]
-  answers            Answer[]
   connections        Connection[]
   mentorshipRequests MentorshipRequest[]
 }
@@ -50,11 +32,12 @@ model Mentee {
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt
   reputation         Int                 @default(0)
-  questions          Question[]
-  articleVotes       ArticleVote[]
   aiLogs             AiLog[]
+  articleVotes       ArticleVote[]
+  bookmarks          Bookmark[]
   connections        Connection[]
   mentorshipRequests MentorshipRequest[]
+  questions          Question[]
 }
 
 model Admin {
@@ -64,7 +47,6 @@ model Admin {
   updatedAt DateTime @updatedAt
 }
 
-// Universal Auth
 model AuthCredentials {
   id        Int       @id @default(autoincrement())
   email     String    @unique
@@ -77,17 +59,16 @@ model AuthCredentials {
   @@index([userId, role])
 }
 
-// Mentorship
 model MentorshipRequest {
   id             Int      @id @default(autoincrement())
   mentorId       Int
   menteeId       Int
-  status         String // "pending", "accepted", "rejected"
+  status         String
   requestMessage String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
-  mentor         Mentor   @relation(fields: [mentorId], references: [id])
   mentee         Mentee   @relation(fields: [menteeId], references: [id])
+  mentor         Mentor   @relation(fields: [mentorId], references: [id])
 
   @@unique([mentorId, menteeId])
 }
@@ -98,21 +79,20 @@ model Connection {
   menteeId     Int
   acceptedAt   DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
-  mentor       Mentor        @relation(fields: [mentorId], references: [id])
   mentee       Mentee        @relation(fields: [menteeId], references: [id])
+  mentor       Mentor        @relation(fields: [mentorId], references: [id])
   conversation Conversation?
 
   @@unique([mentorId, menteeId])
 }
 
-// Chat
 model Conversation {
   id           Int        @id @default(autoincrement())
   connectionId Int        @unique
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
-  messages     Message[]
   connection   Connection @relation(fields: [connectionId], references: [id])
+  messages     Message[]
 }
 
 model Message {
@@ -127,33 +107,59 @@ model Message {
   conversation   Conversation @relation(fields: [conversationId], references: [id])
 }
 
-// QnA
 model Question {
-  id        Int           @id @default(autoincrement())
+  id        Int            @id @default(autoincrement())
   menteeId  Int
   title     String
   body      String
-  createdAt DateTime      @default(now())
-  updatedAt DateTime      @updatedAt
-  mentee    Mentee        @relation(fields: [menteeId], references: [id])
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
   answers   Answer[]
+  mentee    Mentee         @relation(fields: [menteeId], references: [id])
   tags      QuestionTag[]
+  votes     QuestionVote[]
 }
 
 model Answer {
-  id         Int      @id @default(autoincrement())
+  id         Int          @id @default(autoincrement())
   questionId Int
-  mentorId   Int
   body       String
-  upvotes    Int      @default(0)
-  downvotes  Int      @default(0)
+  upvotes    Int          @default(0)
+  downvotes  Int          @default(0)
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+  userId     Int
+  userRole   Role
+  question   Question     @relation(fields: [questionId], references: [id])
+  votes      AnswerVote[]
+}
+
+model QuestionVote {
+  id         Int      @id @default(autoincrement())
+  userRole   Role
+  userId     Int
+  questionId Int
+  voteType   VoteType
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
   question   Question @relation(fields: [questionId], references: [id])
-  mentor     Mentor   @relation(fields: [mentorId], references: [id])
+
+  @@unique([userId, questionId, userRole])
 }
 
-// Articles
+model AnswerVote {
+  id        Int      @id @default(autoincrement())
+  userRole  Role
+  userId    Int
+  answerId  Int
+  voteType  VoteType
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  answer    Answer   @relation(fields: [answerId], references: [id])
+
+  @@unique([userId, answerId, userRole])
+}
+
 model Article {
   id        Int           @id @default(autoincrement())
   authorId  Int
@@ -165,8 +171,8 @@ model Article {
   createdAt DateTime      @default(now())
   updatedAt DateTime      @updatedAt
   author    Mentor        @relation(fields: [authorId], references: [id])
-  votes     ArticleVote[]
   tags      ArticleTag[]
+  votes     ArticleVote[]
 }
 
 model ArticleVote {
@@ -176,13 +182,12 @@ model ArticleVote {
   voteType  VoteType
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  mentee    Mentee   @relation(fields: [menteeId], references: [id])
   article   Article  @relation(fields: [articleId], references: [id])
+  mentee    Mentee   @relation(fields: [menteeId], references: [id])
 
   @@unique([menteeId, articleId])
 }
 
-// Communities
 model Community {
   id          Int               @id @default(autoincrement())
   name        String            @unique
@@ -234,7 +239,6 @@ model CommunityPostVote {
   @@unique([userId, postId, userRole])
 }
 
-// Badges & Reputation
 model Badge {
   id                  Int         @id @default(autoincrement())
   name                String      @unique
@@ -267,7 +271,6 @@ model ReputationHistory {
   updatedAt DateTime @updatedAt
 }
 
-// AI Logs & Bookmarks
 model AiLog {
   id        Int      @id @default(autoincrement())
   menteeId  Int
@@ -278,31 +281,26 @@ model AiLog {
   mentee    Mentee   @relation(fields: [menteeId], references: [id])
 }
 
-// model Bookmark {
-//   id          Int      @id @default(autoincrement())
-//   userId      Int
-//   userRole    Role
-//   contentType String   // "post", "question", "article", etc.
-//   contentId   Int
-//   createdAt   DateTime @default(now())
-//   updatedAt   DateTime @updatedAt
-
-//   @@unique([userId, userRole, contentType, contentId])
-//   @@index([userId, userRole])
-//   @@index([contentType, contentId])
-// }
-
-
-model Tag {
+model Bookmark {
   id          Int      @id @default(autoincrement())
-  name        String   @unique // e.g. "python", "backend"
-  description String? // optional: like tag wiki
+  menteeId    Int
+  contentType String
+  contentId   Int
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  mentee      Mentee   @relation(fields: [menteeId], references: [id])
 
-  // relations
-  questions QuestionTag[]
-  articles  ArticleTag[]
+  @@unique([menteeId, contentType, contentId])
+}
+
+model Tag {
+  id          Int           @id @default(autoincrement())
+  name        String        @unique
+  description String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  articles    ArticleTag[]
+  questions   QuestionTag[]
 }
 
 model QuestionTag {
@@ -323,4 +321,15 @@ model ArticleTag {
   tag       Tag     @relation(fields: [tagId], references: [id])
 
   @@unique([articleId, tagId])
+}
+
+enum Role {
+  mentor
+  mentee
+  admin
+}
+
+enum VoteType {
+  upvote
+  downvote
 }

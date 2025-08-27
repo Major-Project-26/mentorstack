@@ -57,6 +57,21 @@ export interface Question {
   createdAt: string;
   authorName: string;
   answerCount?: number;
+  votes?: { voteType: string; userId: number }[];
+  userVote?: 'upvote' | 'downvote' | null;
+  voteScore?: number;
+  answers?: Answer[];
+}
+
+export interface Answer {
+  id: number;
+  questionId: number;
+  content: string;
+  authorName: string;
+  createdAt: string;
+  votes?: { voteType: string; userId: number }[];
+  userVote?: 'upvote' | 'downvote' | null;
+  voteScore?: number;
 }
 
 export interface Community {
@@ -282,6 +297,65 @@ class AuthAPI {
     return response.json();
   }
 
+  async getQuestion(questionId: number): Promise<Question> {
+    const response = await fetch(`${API_BASE_URL}/questions/${questionId}`, {
+      method: 'GET',
+      headers: this.getHeaders(true),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to get question');
+    }
+
+    return response.json();
+  }
+
+  async voteOnQuestion(questionId: number, voteType: 'upvote' | 'downvote'): Promise<{ message: string }> {
+    const response = await fetch(`${API_BASE_URL}/questions/${questionId}/vote`, {
+      method: 'POST',
+      headers: this.getHeaders(true),
+      body: JSON.stringify({ voteType }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to vote on question');
+    }
+
+    return response.json();
+  }
+
+  async voteOnAnswer(questionId: number, answerId: number, voteType: 'upvote' | 'downvote'): Promise<{ message: string }> {
+    const response = await fetch(`${API_BASE_URL}/questions/${questionId}/answers/${answerId}/vote`, {
+      method: 'POST',
+      headers: this.getHeaders(true),
+      body: JSON.stringify({ voteType }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to vote on answer');
+    }
+
+    return response.json();
+  }
+
+  async submitAnswer(questionId: number, content: string): Promise<{ message: string; answer: Answer }> {
+    const response = await fetch(`${API_BASE_URL}/questions/${questionId}/answers`, {
+      method: 'POST',
+      headers: this.getHeaders(true),
+      body: JSON.stringify({ content }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to submit answer');
+    }
+
+    return response.json();
+  }
+
   // Community methods
   async getCommunities(): Promise<Community[]> {
     const response = await fetch(`${API_BASE_URL}/communities`, {
@@ -488,6 +562,23 @@ class AuthAPI {
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.message || 'Failed to get popular tags');
+    }
+
+    return response.json();
+  }
+
+  async createArticle(formData: FormData): Promise<{ message: string; article: Article }> {
+    const response = await fetch(`${API_BASE_URL}/articles`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${this.getToken()}`,
+      },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to create article');
     }
 
     return response.json();

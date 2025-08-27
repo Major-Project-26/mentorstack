@@ -26,30 +26,9 @@ export default function MenteeHomePage() {
           return;
         }
 
-        // Load questions from API (temporarily using mock data)
-        // const questionsData = await authAPI.getQuestions();
-        // setQuestions(questionsData);
-        
-        // Mock data for now
-        setQuestions([
-          {
-            id: 1,
-            title: "How to get Razorpay API test key without entering my bank details?",
-            tags: ["api", "testing", "flutter"],
-            createdAt: new Date().toISOString(),
-            authorName: "Test User",
-            answerCount: 20
-          },
-          {
-            id: 2,
-            title: "Vue 3, mapbox: create multiple mapboxes with v-for",
-            description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
-            tags: ["vue", "mapbox", "javascript"],
-            createdAt: new Date().toISOString(),
-            authorName: "Another User",
-            answerCount: 5
-          }
-        ]);
+        // Load questions from API
+        const questionsData = await authAPI.getQuestions();
+        setQuestions(questionsData);
 
       } catch (error) {
         console.error('Error loading data:', error);
@@ -62,6 +41,23 @@ export default function MenteeHomePage() {
 
     loadData();
   }, [router]);
+
+  const handleVote = async (questionId: number, voteType: 'upvote' | 'downvote') => {
+    try {
+      await authAPI.voteOnQuestion(questionId, voteType);
+      // Reload questions to get updated vote state
+      const questionsData = await authAPI.getQuestions();
+      setQuestions(questionsData);
+    } catch (err) {
+      console.error('Failed to vote:', err);
+    }
+  };
+
+  const calculateVoteScore = (question: Question): number => {
+    if (!question.votes) return 0;
+    return question.votes.filter(v => v.voteType === 'upvote').length - 
+           question.votes.filter(v => v.voteType === 'downvote').length;
+  };
 
   if (loading) {
     return (
@@ -112,38 +108,71 @@ export default function MenteeHomePage() {
           {/* Questions List */}
           {questions.map((question) => (
             <div key={question.id} className="bg-[var(--color-neutral)] p-6 rounded-xl shadow-md mb-6 hover:shadow-lg transition">
-              <div className="text-sm text-[var(--color-tertiary-light)] mb-2">
-                @{question.authorName}
-              </div>
-              <h3 className="font-semibold text-xl mb-3 text-[var(--color-tertiary)] hover:text-[var(--color-primary)] transition">
-                {question.title}
-              </h3>
-              {question.description && (
-                <p className="text-[var(--color-tertiary-light)] text-sm leading-relaxed mb-3">
-                  {question.description}
-                </p>
-              )}
-              <div className="flex gap-2 mb-3">
-                {question.tags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="px-3 py-1 text-xs font-medium bg-[var(--color-primary)] text-[var(--color-neutral)] rounded-full"
+              <div className="flex items-start gap-4">
+                {/* Voting Section */}
+                <div className="flex flex-col items-center space-y-1 pt-2">
+                  <button
+                    onClick={() => handleVote(question.id, 'upvote')}
+                    className={`p-2 rounded-full hover:bg-gray-100 transition-colors ${
+                      question.userVote === 'upvote' ? 'text-purple-600' : 'text-gray-400'
+                    }`}
+                    title="Upvote question"
+                    aria-label="Upvote question"
                   >
-                    {tag}
-                  </span>
-                ))}
-              </div>
-              <div className="flex justify-between text-sm text-[var(--color-tertiary-light)]">
-                <span>{question.answerCount} Answers</span>
-                <span>{question.createdAt}</span>
-              </div>
-              {/* Answer Button */}
-              <div className="mt-4 pt-4 border-t border-[var(--color-neutral-dark)]">
-                <Link href={`/answer-question?id=${question.id}`}>
-                  <button className="bg-[var(--color-primary)] text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-[var(--color-primary-dark)] transition-colors">
-                    Answer this question
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"/>
+                    </svg>
                   </button>
-                </Link>
+                  
+                  <span className="text-sm font-medium text-[var(--color-tertiary)]">
+                    {question.voteScore || calculateVoteScore(question)}
+                  </span>
+                  
+                  <button
+                    onClick={() => handleVote(question.id, 'downvote')}
+                    className={`p-2 rounded-full hover:bg-gray-100 transition-colors ${
+                      question.userVote === 'downvote' ? 'text-red-600' : 'text-gray-400'
+                    }`}
+                    title="Downvote question"
+                    aria-label="Downvote question"
+                  >
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6z"/>
+                    </svg>
+                  </button>
+                </div>
+
+                {/* Question Content */}
+                <div className="flex-1">
+                  <div className="text-sm text-[var(--color-tertiary-light)] mb-2">
+                    @{question.authorName}
+                  </div>
+                  <h3 
+                    className="font-semibold text-xl mb-3 text-[var(--color-tertiary)] hover:text-[var(--color-primary)] transition cursor-pointer"
+                    onClick={() => router.push(`/questions/${question.id}`)}
+                  >
+                    {question.title}
+                  </h3>
+                  {question.description && (
+                    <p className="text-[var(--color-tertiary-light)] text-sm leading-relaxed mb-3">
+                      {question.description}
+                    </p>
+                  )}
+                  <div className="flex gap-2 mb-3">
+                    {question.tags.map((tag) => (
+                      <span
+                        key={tag}
+                        className="px-3 py-1 text-xs font-medium bg-[var(--color-primary)] text-[var(--color-neutral)] rounded-full"
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                  <div className="flex justify-between text-sm text-[var(--color-tertiary-light)]">
+                    <span>{question.answerCount || 0} Answers</span>
+                    <span>{new Date(question.createdAt).toLocaleDateString()}</span>
+                  </div>
+                </div>
               </div>
             </div>
           ))}
