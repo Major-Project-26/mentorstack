@@ -78,12 +78,14 @@ export interface CommunityPost {
   communityId: number;
   userRole: string;
   userId: number;
+  userName?: string;
   title: string;
   content: string;
   imageUrls: string[];
   createdAt: string;
   updatedAt: string;
   votes: CommunityPostVote[];
+  userVote: 'upvote' | 'downvote' | null;
   _count: {
     votes: number;
   };
@@ -352,10 +354,24 @@ class AuthAPI {
     return response.json();
   }
 
+  async checkCommunityMembership(communityId: number): Promise<{ isMember: boolean }> {
+    const response = await fetch(`${API_BASE_URL}/communities/${communityId}/membership`, {
+      method: 'GET',
+      headers: this.getHeaders(true),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to check membership');
+    }
+
+    return response.json();
+  }
+
   async getCommunityPosts(communityId: number, page = 1, limit = 10): Promise<CommunityPost[]> {
     const response = await fetch(`${API_BASE_URL}/communities/${communityId}/posts?page=${page}&limit=${limit}`, {
       method: 'GET',
-      headers: this.getHeaders(),
+      headers: this.getHeaders(true),
     });
 
     if (!response.ok) {
