@@ -311,20 +311,10 @@ class AuthAPI {
     return response.json();
   }
 
-  async voteOnQuestion(questionId: number, voteType: 'upvote' | 'downvote'): Promise<{ message: string }> {
-    const response = await fetch(`${API_BASE_URL}/questions/${questionId}/vote`, {
-      method: 'POST',
-      headers: this.getHeaders(true),
-      body: JSON.stringify({ voteType }),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Failed to vote on question');
-    }
-
-    return response.json();
-  }
+  // Note: Questions don't have voting system in current schema
+  // async voteOnQuestion(questionId: number, voteType: 'upvote' | 'downvote'): Promise<{ message: string }> {
+  //   // Not implemented - questions don't have voting in schema
+  // }
 
   async voteOnAnswer(questionId: number, answerId: number, voteType: 'upvote' | 'downvote'): Promise<{ message: string }> {
     const response = await fetch(`${API_BASE_URL}/questions/${questionId}/answers/${answerId}/vote`, {
