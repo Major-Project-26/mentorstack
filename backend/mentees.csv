@@ -1,0 +1,3 @@
+name,bio,avatarUrl,skills,location,reputation
+Alice,Learning AI,https://example.com/a.png,"Python,ML",Berlin,10
+Bob,Fullstack dev,https://example.com/b.png,"JS,React,Node",NYC,20

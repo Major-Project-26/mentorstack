@@ -1,0 +1,16 @@
+[
+    {
+        "id": 1,
+        "conversationId": 1,
+        "senderRole": "mentor",
+        "senderId": 2,
+        "message": "Hi Diana, how can I help?"
+    },
+    {
+        "id": 2,
+        "conversationId": 1,
+        "senderRole": "mentee",
+        "senderId": 2,
+        "message": "Need tips for React hooks!"
+    }
+]

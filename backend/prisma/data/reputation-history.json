@@ -1,0 +1,16 @@
+[
+    {
+        "id": 1,
+        "userId": 1,
+        "userRole": "mentor",
+        "change": 20,
+        "reason": "Answer accepted"
+    },
+    {
+        "id": 2,
+        "userId": 2,
+        "userRole": "mentee",
+        "change": 10,
+        "reason": "Asked good question"
+    }
+]

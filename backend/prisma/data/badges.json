@@ -1,0 +1,14 @@
+[
+    {
+        "id": 1,
+        "name": "Rising Star",
+        "description": "Earned 50 reputation.",
+        "reputationThreshold": 50
+    },
+    {
+        "id": 2,
+        "name": "Expert",
+        "description": "Earned 100 reputation.",
+        "reputationThreshold": 100
+    }
+]

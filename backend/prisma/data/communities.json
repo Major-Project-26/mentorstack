@@ -1,0 +1,22 @@
+[
+    {
+        "id": 1,
+        "name": "AI Enthusiasts",
+        "description": "All about ML & AI",
+        "skills": [
+            "ML",
+            "AI"
+        ],
+        "createdBy": 1
+    },
+    {
+        "id": 2,
+        "name": "Web Devs",
+        "description": "Frontend + Backend",
+        "skills": [
+            "React",
+            "Node.js"
+        ],
+        "createdBy": 2
+    }
+]

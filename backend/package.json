@@ -12,6 +12,7 @@
     "db:studio": "prisma studio",
     "db:seed": "ts-node prisma/seed.ts",
     "db:reset": "prisma migrate reset",
+    "upload": "ts-node scripts/upload.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -24,6 +25,7 @@
     "@types/jsonwebtoken": "^9.0.10",
     "bcryptjs": "^3.0.2",
     "cors": "^2.8.5",
+    "csv-parser": "^3.2.0",
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
     "jsonwebtoken": "^9.0.2",

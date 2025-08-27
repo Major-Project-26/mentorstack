@@ -23,7 +23,6 @@ export default function Home() {
 
     try {
       const result = await authAPI.login({ email, password });
-      
       // Login successful, redirect based on user role
       if (result.user.role === 'mentee') {
         router.push('/mentee-home'); // Mentee home page
