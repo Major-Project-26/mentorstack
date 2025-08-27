@@ -53,7 +53,7 @@ export default function Home() {
               <button onClick={() => router.push('/profile')} className="text-slate-600 hover:text-slate-800 font-medium">
                 Profile
               </button>
-              <button 
+              <button
                 onClick={() => router.push('/')}
                 className="text-slate-600 hover:text-slate-800 font-medium"
               >
@@ -98,8 +98,8 @@ export default function Home() {
               onClick={() => router.push('/ask-question')}
               className="w-full py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition"
             >
-              Ask Question
-            </button>
+                Ask Question
+              </button>
           </div>
 
           <div className="bg-white p-6 rounded-2xl shadow-lg border border-slate-200 hover:shadow-xl transition-shadow">
@@ -128,7 +128,7 @@ export default function Home() {
               View All →
             </button>
           </div>
-          
+
           {loading ? (
             <div className="text-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500 mx-auto"></div>
@@ -144,10 +144,10 @@ export default function Home() {
               <button 
                 onClick={fetchRecentQuestions}
                 className="px-4 py-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition"
-              >
+                  >
                 Try Again
               </button>
-            </div>
+              </div>
           ) : questions.length === 0 ? (
             <div className="text-center py-12">
               <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -160,7 +160,7 @@ export default function Home() {
                 className="px-6 py-3 bg-emerald-500 text-white font-medium rounded-lg hover:bg-emerald-600 transition"
               >
                 Ask Your First Question
-              </button>
+                </button>
             </div>
           ) : (
             <div className="space-y-4">
@@ -171,8 +171,8 @@ export default function Home() {
                       {question.title}
                     </h3>
                     <span className="text-sm text-slate-500">{formatDate(question.createdAt)}</span>
-                  </div>
-                  
+          </div>
+
                   {question.description && (
                     <p className="text-slate-600 text-sm mb-3 line-clamp-2">
                       {question.description.length > 150 
@@ -190,27 +190,27 @@ export default function Home() {
                     {question.tags && question.tags.length > 0 && (
                       <div className="flex gap-1">
                         {question.tags.slice(0, 3).map((tag, index) => (
-                          <span 
+                  <span
                             key={index} 
                             className="px-2 py-1 bg-emerald-100 text-emerald-700 rounded-md text-xs"
-                          >
-                            {tag}
-                          </span>
-                        ))}
+                  >
+                    {tag}
+                  </span>
+                ))}
                         {question.tags.length > 3 && (
                           <span className="px-2 py-1 bg-slate-100 text-slate-600 rounded-md text-xs">
                             +{question.tags.length - 3}
                           </span>
                         )}
-                      </div>
+              </div>
                     )}
-                  </div>
+              </div>
                 </div>
               ))}
             </div>
           )}
         </div>
-      </div>
-    </div>
+          </div>
+          </div>
   );
 }

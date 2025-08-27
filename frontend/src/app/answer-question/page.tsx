@@ -306,11 +306,23 @@ onMounted(async () => {
   const formatHeading = () => insertAtCursor("## ", "", "heading");
   const formatDivider = () => insertAtCursor("\n---\n", "", "");
 
-  const insertImage = () => {
-    const imageUrl = prompt("Enter image URL:");
-    if (imageUrl) {
-      insertAtCursor("![", `](${imageUrl})`, "alt text");
-    }
+  const insertImage = (file: File) => {
+    const imageUrl = URL.createObjectURL(file);
+    const imageName = file.name.split('.')[0];
+    insertAtCursor(`\n![${imageName}](${imageUrl})\n`);
+  };
+
+  const handleImageUpload = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (file) {
+        insertImage(file);
+      }
+    };
+    input.click();
   };
 
   const insertTable = () => {
@@ -425,7 +437,7 @@ onMounted(async () => {
         <tbody>${rowsHtml}</tbody>
       </table>`;
     });
-
+    
     // Handle unordered lists (convert to proper <ul><li> structure)
     const unorderedListRegex = /^(\s*)- (.+)$/gm;
     let listItems = [];
@@ -994,7 +1006,7 @@ onMounted(async () => {
                   title="Code Editor"
                 />
                 <ToolbarButton
-                  onClick={insertImage}
+                  onClick={handleImageUpload}
                   icon={<Image size={18} />}
                   title="Insert Image"
                 />
