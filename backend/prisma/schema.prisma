@@ -53,7 +53,6 @@ model Mentee {
   questions          Question[]
   articleVotes       ArticleVote[]
   aiLogs             AiLog[]
-  bookmarks          Bookmark[]
   connections        Connection[]
   mentorshipRequests MentorshipRequest[]
 }
@@ -281,14 +280,14 @@ model AiLog {
 
 model Bookmark {
   id          Int      @id @default(autoincrement())
-  menteeId    Int
-  contentType String
+  userId      Int
+  userRole    Role
+  contentType String   // "post", "question", "article", etc.
   contentId   Int
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  mentee      Mentee   @relation(fields: [menteeId], references: [id])
 
-  @@unique([menteeId, contentType, contentId])
+  @@unique([userId, userRole, contentType, contentId])
 }
 
 model Tag {

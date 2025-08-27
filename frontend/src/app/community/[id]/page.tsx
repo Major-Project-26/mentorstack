@@ -1,12 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Layout from "../../../components/Layout";
 import { authAPI, Community, CommunityPost } from "@/lib/auth-api";
 
 export default function CommunityDetailPage() {
   const params = useParams();
+  const router = useRouter();
   const communityId = parseInt(params.id as string);
 
   const [community, setCommunity] = useState<Community | null>(null);
@@ -32,9 +33,14 @@ export default function CommunityDetailPage() {
         setCommunity(communityData);
         setPosts(postsData);
         
-        // Check if user is a member (this would need to be implemented in the API)
-        // For now, we'll assume user can join
-        setIsMember(false);
+        // Check if user is a member
+        try {
+          const membershipData = await authAPI.checkCommunityMembership(communityId);
+          setIsMember(membershipData.isMember);
+        } catch {
+          console.log('Not authenticated or error checking membership');
+          setIsMember(false);
+        }
       } catch (error) {
         console.error('Error loading community data:', error);
       } finally {
@@ -55,9 +61,13 @@ export default function CommunityDetailPage() {
       setCommunity(communityData);
       setPosts(postsData);
       
-      // Check if user is a member (this would need to be implemented in the API)
-      // For now, we'll assume user can join
-      setIsMember(false);
+      // Check if user is a member
+      try {
+        const membershipData = await authAPI.checkCommunityMembership(communityId);
+        setIsMember(membershipData.isMember);
+      } catch {
+        setIsMember(false);
+      }
     } catch (error) {
       console.error('Error loading community data:', error);
     } finally {
@@ -229,7 +239,11 @@ export default function CommunityDetailPage() {
                         <div className="flex flex-col items-center gap-2">
                           <button
                             onClick={() => handleVote(post.id, 'upvote')}
-                            className="p-2 text-gray-400 hover:text-emerald-500 hover:bg-emerald-50 rounded-lg transition-colors"
+                            className={`p-2 rounded-lg transition-colors ${
+                              post.userVote === 'upvote'
+                                ? 'text-purple-700 bg-purple-100 border-2 border-purple-300'
+                                : 'text-gray-400 hover:text-purple-500 hover:bg-purple-50'
+                            }`}
                             disabled={!isMember}
                             title="Upvote"
                             aria-label="Upvote post"
@@ -244,7 +258,11 @@ export default function CommunityDetailPage() {
                           </span>
                           <button
                             onClick={() => handleVote(post.id, 'downvote')}
-                            className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                            className={`p-2 rounded-lg transition-colors ${
+                              post.userVote === 'downvote'
+                                ? 'text-red-700 bg-red-100 border-2 border-red-300'
+                                : 'text-gray-400 hover:text-red-500 hover:bg-red-50'
+                            }`}
                             disabled={!isMember}
                             title="Downvote"
                             aria-label="Downvote post"
@@ -256,11 +274,11 @@ export default function CommunityDetailPage() {
                         </div>
 
                         {/* Post Content */}
-                        <div className="flex-1">
-                          <h3 className="text-lg font-semibold text-gray-900 mb-2">{post.title}</h3>
-                          <p className="text-gray-600 mb-3">{post.content}</p>
+                        <div className="flex-1 cursor-pointer" onClick={() => router.push(`/community/${communityId}/post/${post.id}`)}>
+                          <h3 className="text-lg font-semibold text-gray-900 mb-2 hover:text-blue-600 transition-colors">{post.title}</h3>
+                          <p className="text-gray-600 mb-3 line-clamp-3">{post.content}</p>
                           <div className="text-sm text-gray-500">
-                            Posted {new Date(post.createdAt).toLocaleDateString()} by User{post.userId}
+                            Posted {new Date(post.createdAt).toLocaleDateString()} by {post.userName || `User${post.userId}`}
                           </div>
                         </div>
                       </div>
