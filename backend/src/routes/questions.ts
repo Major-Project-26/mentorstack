@@ -32,7 +32,12 @@ router.get('/', async (req: any, res: any) => {
             name: true
           }
         },
-        answers: true
+        answers: true,
+        tags: {
+          include: {
+            tag: true
+          }
+        }
       },
       orderBy: {
         createdAt: 'desc'
@@ -43,7 +48,7 @@ router.get('/', async (req: any, res: any) => {
       id: question.id,
       title: question.title,
       description: question.body,
-      tags: question.tags,
+      tags: question.tags.map(qt => qt.tag.name),
       createdAt: question.createdAt,
       authorName: question.mentee.name,
       answerCount: question.answers.length
@@ -78,6 +83,11 @@ router.get('/:id', async (req: any, res: any) => {
               }
             }
           }
+        },
+        tags: {
+          include: {
+            tag: true
+          }
         }
       }
     });
@@ -90,7 +100,7 @@ router.get('/:id', async (req: any, res: any) => {
       id: question.id,
       title: question.title,
       description: question.body,
-      tags: question.tags,
+      tags: question.tags.map(qt => qt.tag.name),
       createdAt: question.createdAt,
       authorName: question.mentee.name,
       answers: question.answers.map(answer => ({
@@ -120,12 +130,12 @@ router.post('/', authenticateToken, async (req: any, res: any) => {
       return res.status(403).json({ message: 'Only mentees can ask questions' });
     }
 
+    // Create the question first
     const question = await prisma.question.create({
       data: {
         title,
         body,
-        menteeId: userId,
-        tags: tags || []
+        menteeId: userId
       },
       include: {
         mentee: {
@@ -136,13 +146,37 @@ router.post('/', authenticateToken, async (req: any, res: any) => {
       }
     });
 
+    // If tags are provided, create them
+    if (tags && tags.length > 0) {
+      for (const tagName of tags) {
+        // Find or create the tag
+        let tag = await prisma.tag.findUnique({
+          where: { name: tagName }
+        });
+
+        if (!tag) {
+          tag = await prisma.tag.create({
+            data: { name: tagName }
+          });
+        }
+
+        // Create the question-tag relationship
+        await prisma.questionTag.create({
+          data: {
+            questionId: question.id,
+            tagId: tag.id
+          }
+        });
+      }
+    }
+
     res.status(201).json({
       message: 'Question created successfully',
       question: {
         id: question.id,
         title: question.title,
         description: question.body,
-        tags: question.tags,
+        tags: tags || [],
         createdAt: question.createdAt,
         authorName: question.mentee.name
       }
