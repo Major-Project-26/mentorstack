@@ -39,7 +39,7 @@ async function main() {
 
   // Create Auth Credentials
   const hashedPassword = await bcrypt.hash('password123', 10);
-  
+
   await prisma.$executeRaw`
     INSERT INTO "AuthCredentials" (email, password, role, "userId", "createdAt")
     VALUES 
