@@ -488,6 +488,7 @@ export default function CreateArticle() {
         </button>
     );
 
+
     return (
         <div className="min-h-screen bg-[#f4f4f4]">
             <div className="max-w-6xl mx-auto p-6">

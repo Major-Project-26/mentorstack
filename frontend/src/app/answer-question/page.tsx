@@ -437,7 +437,7 @@ onMounted(async () => {
         <tbody>${rowsHtml}</tbody>
       </table>`;
     });
-
+    
     // Handle unordered lists (convert to proper <ul><li> structure)
     const unorderedListRegex = /^(\s*)- (.+)$/gm;
     let listItems = [];
