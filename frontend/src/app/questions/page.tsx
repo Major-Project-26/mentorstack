@@ -42,23 +42,6 @@ export default function MenteeHomePage() {
     loadData();
   }, [router]);
 
-  const handleVote = async (questionId: number, voteType: 'upvote' | 'downvote') => {
-    try {
-      await authAPI.voteOnQuestion(questionId, voteType);
-      // Reload questions to get updated vote state
-      const questionsData = await authAPI.getQuestions();
-      setQuestions(questionsData);
-    } catch (err) {
-      console.error('Failed to vote:', err);
-    }
-  };
-
-  const calculateVoteScore = (question: Question): number => {
-    if (!question.votes) return 0;
-    return question.votes.filter(v => v.voteType === 'upvote').length - 
-           question.votes.filter(v => v.voteType === 'downvote').length;
-  };
-
   if (loading) {
     return (
       <Layout>
@@ -109,32 +92,28 @@ export default function MenteeHomePage() {
           {questions.map((question) => (
             <div key={question.id} className="bg-[var(--color-neutral)] p-6 rounded-xl shadow-md mb-6 hover:shadow-lg transition">
               <div className="flex items-start gap-4">
-                {/* Voting Section */}
+                {/* Voting Section - Disabled (no voting in schema) */}
                 <div className="flex flex-col items-center space-y-1 pt-2">
                   <button
-                    onClick={() => handleVote(question.id, 'upvote')}
-                    className={`p-2 rounded-full hover:bg-gray-100 transition-colors ${
-                      question.userVote === 'upvote' ? 'text-purple-600' : 'text-gray-400'
-                    }`}
-                    title="Upvote question"
-                    aria-label="Upvote question"
+                    disabled={true}
+                    className="p-2 rounded-full text-gray-300 cursor-not-allowed"
+                    title="Question voting not available"
+                    aria-label="Question voting not available"
                   >
                     <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                       <path d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"/>
                     </svg>
                   </button>
                   
-                  <span className="text-sm font-medium text-[var(--color-tertiary)]">
-                    {question.voteScore || calculateVoteScore(question)}
+                  <span className="text-sm font-medium text-gray-300">
+                    0
                   </span>
                   
                   <button
-                    onClick={() => handleVote(question.id, 'downvote')}
-                    className={`p-2 rounded-full hover:bg-gray-100 transition-colors ${
-                      question.userVote === 'downvote' ? 'text-red-600' : 'text-gray-400'
-                    }`}
-                    title="Downvote question"
-                    aria-label="Downvote question"
+                    disabled={true}
+                    className="p-2 rounded-full text-gray-300 cursor-not-allowed"
+                    title="Question voting not available"
+                    aria-label="Question voting not available"
                   >
                     <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                       <path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6z"/>

@@ -14,7 +14,7 @@ import {
   Quote,
   Minus,
   Type,
-  Image,
+  Image as ImageIcon,
   Table,
   Terminal,
   X,
@@ -55,17 +55,6 @@ export default function QuestionDetailPage() {
 
     loadQuestion();
   }, [questionId, router]);
-
-  const handleVoteQuestion = async (voteType: 'upvote' | 'downvote') => {
-    try {
-      await authAPI.voteOnQuestion(questionId, voteType);
-      // Reload question to get updated vote state
-      const questionData = await authAPI.getQuestion(questionId);
-      setQuestion(questionData);
-    } catch (err) {
-      console.error('Failed to vote on question:', err);
-    }
-  };
 
   const handleVoteAnswer = async (answerId: number, voteType: 'upvote' | 'downvote') => {
     try {
@@ -357,32 +346,28 @@ export default function QuestionDetailPage() {
         <div className="bg-white rounded-xl shadow-sm border border-gray-200">
           <div className="p-8">
             <div className="flex items-start gap-6">
-              {/* Question Voting Section */}
+              {/* Question Voting Section - Disabled (no voting in schema) */}
               <div className="flex flex-col items-center space-y-2">
                 <button
-                  onClick={() => handleVoteQuestion('upvote')}
-                  className={`p-3 rounded-full hover:bg-gray-100 transition-colors ${
-                    question.userVote === 'upvote' ? 'text-purple-600' : 'text-gray-400'
-                  }`}
-                  title="Upvote question"
-                  aria-label="Upvote question"
+                  disabled={true}
+                  className="p-3 rounded-full text-gray-300 cursor-not-allowed"
+                  title="Question voting not available"
+                  aria-label="Question voting not available"
                 >
                   <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"/>
                   </svg>
                 </button>
                 
-                <span className="text-lg font-bold text-gray-700">
-                  {question.voteScore || calculateVoteScore(question.votes || [])}
+                <span className="text-lg font-bold text-gray-300">
+                  0
                 </span>
                 
                 <button
-                  onClick={() => handleVoteQuestion('downvote')}
-                  className={`p-3 rounded-full hover:bg-gray-100 transition-colors ${
-                    question.userVote === 'downvote' ? 'text-red-600' : 'text-gray-400'
-                  }`}
-                  title="Downvote question"
-                  aria-label="Downvote question"
+                  disabled={true}
+                  className="p-3 rounded-full text-gray-300 cursor-not-allowed"
+                  title="Question voting not available"
+                  aria-label="Question voting not available"
                 >
                   <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6z"/>
@@ -579,7 +564,7 @@ export default function QuestionDetailPage() {
                       />
                       <ToolbarButton
                         onClick={handleImageUpload}
-                        icon={<Image size={18} />}
+                        icon={<ImageIcon size={18} />}
                         title="Insert Image"
                       />
                       <ToolbarButton
