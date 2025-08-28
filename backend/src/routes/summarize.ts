@@ -7,7 +7,7 @@ router.post("/", async (req, res) => {
   try {
     const { answers } = req.body;
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
-    const prompt = `Summarize these answers into concise explanation[100-200 words] highlighting key insights:\n\n${answers.join(
+    const prompt = `Summarize these answers into concise explanation[100-150 words] highlighting key insights:\n\n${answers.join(
       "\n\n"
     )}
     and i just need the concise summary each explanation should be displayed one by one`;
