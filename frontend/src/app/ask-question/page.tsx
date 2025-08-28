@@ -16,7 +16,26 @@ const QuestionForm = () => {
   const [rephraseLoading, setRephraseLoading] = useState(false);
   const [rephrasedTitle, setRephrasedTitle] = useState('');
   const [showRephraseSuggestion, setShowRephraseSuggestion] = useState(false);
+  const [suggestedTags, setSuggestedTags] = useState<string[]>([]);
+  const [suggestLoading, setSuggestLoading] = useState(false);
   const router = useRouter();
+  const handleSuggestTags = async () => {
+    setSuggestLoading(true);
+    setSuggestedTags([]);
+    try {
+      const res = await fetch("http://localhost:5000/api/rectags", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question: title, content: description }),
+      });
+      const data = await res.json();
+      setSuggestedTags(data.tags || []);
+    } catch (err) {
+      console.error("Error fetching suggested tags:", err);
+    } finally {
+      setSuggestLoading(false);
+    }
+  };
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -372,31 +391,37 @@ const QuestionForm = () => {
                 </div>
               )}
 
-              {/* Add Custom Tag */}
+              {/* Suggest Tags Button and AI Suggested Tags */}
               <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-tertiary">Add a custom tag</h3>
-                <div className="flex gap-3">
-                  <input
-                    type="text"
-                    placeholder="Enter a tag..."
-                    value={newTag}
-                    onChange={(e) => setNewTag(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        addCustomTag();
-                      }
-                    }}
-                    className="input-field flex-1 p-3 rounded-xl focus:outline-none"
-                  />
-                  <button
-                    type="button"
-                    onClick={addCustomTag}
-                    className="bg-primary text-white px-6 py-3 rounded-xl hover:bg-primary-dark transition-colors font-medium"
-                  >
-                    Add
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  onClick={handleSuggestTags}
+                  disabled={suggestLoading || !title || !description}
+                  className="bg-primary text-white px-6 py-3 rounded-xl hover:bg-primary-dark transition-colors font-medium"
+                >
+                  {suggestLoading ? "Suggesting..." : "Suggest Tags"}
+                </button>
+                {suggestedTags.length > 0 && (
+                  <div>
+                    <h3 className="text-lg font-semibold text-tertiary mt-4">AI Suggested Tags</h3>
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {suggestedTags.map(tag => (
+                        <button
+                          key={tag}
+                          type="button"
+                          onClick={() => handleTagToggle(tag)}
+                          className={`px-3 py-1 rounded-full text-sm transition-colors ${
+                            selectedTags.includes(tag)
+                              ? 'bg-primary text-white'
+                              : 'bg-white text-primary border border-primary hover:bg-primary hover:text-white'
+                          }`}
+                        >
+                          {tag}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Popular Tags */}
@@ -412,32 +437,6 @@ const QuestionForm = () => {
                         selectedTags.includes(tag)
                           ? 'bg-primary text-white'
                           : 'bg-white border-2 border-gray-200 text-gray-700 hover:border-primary hover:text-primary'
-                      }`}
-                    >
-                      {tag}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Recommended Tags */}
-              <div className="glassmorphism rounded-2xl p-6">
-                <h4 className="font-semibold text-tertiary mb-4 flex items-center">
-                  <svg className="w-5 h-5 mr-2 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                  </svg>
-                  Recommended for your question
-                </h4>
-                <div className="flex flex-wrap gap-2">
-                  {recommendedTags.map((tag) => (
-                    <button
-                      key={tag}
-                      type="button"
-                      onClick={() => handleTagToggle(tag)}
-                      className={`px-3 py-1 rounded-full text-sm transition-colors ${
-                        selectedTags.includes(tag)
-                          ? 'bg-primary text-white'
-                          : 'bg-white text-primary border border-primary hover:bg-primary hover:text-white'
                       }`}
                     >
                       {tag}

@@ -9,6 +9,7 @@ import { articlesRouter } from './routes/articles';
 import rephraseRoute from './routes/rephrase';
 import summarizeRoute from "./routes/summarize";
 import { mentorsRouter } from './routes/mentors';
+import tagsRoute from "./routes/rectags";
 
 // Load environment variables
 dotenv.config();
@@ -33,6 +34,7 @@ app.use('/api/articles', articlesRouter);
 app.use('/api/rephrase', rephraseRoute);
 app.use("/api/summarize", summarizeRoute);
 app.use('/api/mentors', mentorsRouter);
+app.use("/api/rectags", tagsRoute);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
