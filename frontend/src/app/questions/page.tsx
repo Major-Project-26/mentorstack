@@ -20,8 +20,8 @@ export default function MenteeHomePage() {
         const userData = await authAPI.getCurrentUser();
         setUser(userData.user);
 
-        // Redirect if not mentee
-        if (userData.user.role !== 'mentee') {
+        // Allow both mentees and mentors to access questions page
+        if (userData.user.role !== 'mentee' && userData.user.role !== 'mentor') {
           router.push('/home');
           return;
         }
@@ -63,7 +63,7 @@ export default function MenteeHomePage() {
             <span className="text-[var(--color-primary-dark)]">
               MentorStack
             </span>
-            , {user?.name || 'Mentee'}
+            , {user?.name || (user?.role === 'mentor' ? 'Mentor' : 'Mentee')}
           </h2>
 
           {/* Filter Bar */}
@@ -81,11 +81,13 @@ export default function MenteeHomePage() {
                 {tab}
               </button>
             ))}
-            <Link href="/ask-question">
-              <button className="ml-auto bg-[var(--color-primary-dark)] text-[var(--color-neutral)] px-5 py-2 rounded-lg font-medium shadow-lg hover:bg-[var(--color-primary)] transition">
-                Ask Question
-              </button>
-            </Link>
+            {user?.role === 'mentee' && (
+              <Link href="/ask-question">
+                <button className="ml-auto bg-[var(--color-primary-dark)] text-[var(--color-neutral)] px-5 py-2 rounded-lg font-medium shadow-lg hover:bg-[var(--color-primary)] transition">
+                  Ask Question
+                </button>
+              </Link>
+            )}
           </div>
 
           {/* Questions List */}

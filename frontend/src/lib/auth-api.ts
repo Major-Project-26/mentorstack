@@ -76,10 +76,17 @@ export interface Community {
   createdBy: number;
   createdAt: string;
   updatedAt: string;
+  memberSkills?: string[]; // Real-time skills from members
   _count: {
     members: number;
     posts: number;
   };
+}
+
+export interface CommunityCategory {
+  name: string;
+  count: number;
+  communities: string[];
 }
 
 export interface CommunityPost {
@@ -139,6 +146,7 @@ export interface Article {
   authorAvatar?: string;
   upvotes: number;
   downvotes: number;
+  tags?: string[];
   createdAt: string;
   updatedAt: string;
 }
@@ -343,7 +351,7 @@ class AuthAPI {
 
   // Community methods
   async getCommunities(): Promise<Community[]> {
-    const response = await fetch(`${API_BASE_URL}/communities`, {
+    const response = await fetch(`${API_BASE_URL}/communities?includeSkills=true`, {
       method: 'GET',
       headers: this.getHeaders(),
     });
@@ -351,6 +359,20 @@ class AuthAPI {
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.message || 'Failed to get communities');
+    }
+
+    return response.json();
+  }
+
+  async getCommunityCategories(): Promise<CommunityCategory[]> {
+    const response = await fetch(`${API_BASE_URL}/communities/categories`, {
+      method: 'GET',
+      headers: this.getHeaders(),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to get community categories');
     }
 
     return response.json();
