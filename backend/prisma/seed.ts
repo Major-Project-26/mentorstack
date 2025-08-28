@@ -1,337 +1,314 @@
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient } from '@prisma/client';
+import bcrypt from 'bcrypt';
 
-// Define enums locally since they may not be exported yet
-enum Role {
-  mentor = 'mentor',
-  mentee = 'mentee',
-  admin = 'admin'
-}
-
-enum VoteType {
-  upvote = 'upvote',
-  downvote = 'downvote'
-}
-
-const prisma = new PrismaClient()
+const prisma = new PrismaClient();
 
 async function main() {
-  console.log('🌱 Starting database seeding...')
+  console.log('🌱 Starting comprehensive database seeding...');
 
-  // Clear existing data (optional - comment out if you want to keep existing data)
-  await prisma.bookmark.deleteMany()
-  await prisma.aiLog.deleteMany()
-  await prisma.reputationHistory.deleteMany()
-  await prisma.userBadge.deleteMany()
-  await prisma.badge.deleteMany()
-  await prisma.communityPostVote.deleteMany()
-  await prisma.communityPost.deleteMany()
-  await prisma.communityMember.deleteMany()
-  await prisma.community.deleteMany()
-  await prisma.articleVote.deleteMany()
-  await prisma.article.deleteMany()
-  await prisma.answer.deleteMany()
-  await prisma.question.deleteMany()
-  await prisma.message.deleteMany()
-  await prisma.conversation.deleteMany()
-  await prisma.connection.deleteMany()
-  await prisma.mentorshipRequest.deleteMany()
-  await prisma.authCredentials.deleteMany()
-  await prisma.admin.deleteMany()
-  await prisma.mentee.deleteMany()
-  await prisma.mentor.deleteMany()
+  // Clear ALL existing data using TRUNCATE with CASCADE for foreign keys
+  await prisma.$executeRaw`TRUNCATE TABLE "UserBadge", "Badge", "ReputationHistory", "Bookmark", "AiLog", "ArticleTag", "ArticleVote", "Article", "CommunityPostVote", "CommunityPost", "CommunityMember", "Community", "Message", "Conversation", "Connection", "MentorshipRequest", "AnswerVote", "QuestionVote", "Answer", "QuestionTag", "Question", "Tag", "AuthCredentials", "Admin", "Mentee", "Mentor" RESTART IDENTITY CASCADE`;
 
   // Create Mentors
-  const mentor1 = await prisma.mentor.create({
-    data: {
-      name: 'Dr. Sarah Johnson',
-      bio: 'Senior Software Engineer with 10+ years experience in full-stack development',
-      skills: ['JavaScript', 'TypeScript', 'React', 'Node.js', 'PostgreSQL'],
-      location: 'San Francisco, CA',
-      reputation: 850,
-    },
-  })
+  await prisma.$executeRaw`
+    INSERT INTO "Mentor" (name, bio, skills, location, reputation, "createdAt", "updatedAt")
+    VALUES 
+    ('Sarah Chen', 'Senior Software Engineer at Google with 8+ years experience in full-stack development, specializing in React, Node.js, and cloud architecture.', ARRAY['React', 'Node.js', 'TypeScript', 'AWS', 'System Design', 'Microservices'], 'San Francisco, CA', 1250, NOW(), NOW()),
+    ('Marcus Rodriguez', 'Tech Lead and Startup Advisor. Former CTO of two successful startups. Expert in scaling teams and building robust backend systems.', ARRAY['Python', 'Django', 'PostgreSQL', 'Docker', 'Kubernetes', 'Leadership'], 'Austin, TX', 980, NOW(), NOW()),
+    ('Emily Wang', 'Data Science Manager at Netflix. PhD in Machine Learning. Passionate about mentoring women in tech and AI applications.', ARRAY['Python', 'Machine Learning', 'TensorFlow', 'Data Analysis', 'SQL', 'Statistics'], 'Los Angeles, CA', 1450, NOW(), NOW()),
+    ('David Kumar', 'Mobile Development Expert with 10+ years building iOS and Android apps. Former Lead at Uber, now freelance consultant.', ARRAY['Swift', 'Kotlin', 'React Native', 'iOS', 'Android', 'Mobile Architecture'], 'Seattle, WA', 890, NOW(), NOW())
+  `;
 
-  const mentor2 = await prisma.mentor.create({
-    data: {
-      name: 'Michael Chen',
-      bio: 'Tech Lead specializing in cloud architecture and DevOps',
-      skills: ['AWS', 'Docker', 'Kubernetes', 'Python', 'Terraform'],
-      location: 'Seattle, WA',
-      reputation: 720,
-    },
-  })
+  // Create Mentees  
+  await prisma.$executeRaw`
+    INSERT INTO "Mentee" (id, name, bio, skills, location, reputation, "createdAt", "updatedAt")
+    VALUES 
+    (1, 'Alex Thompson', 'Computer Science student at Stanford, passionate about web development and looking to break into tech.', ARRAY['JavaScript', 'HTML', 'CSS', 'Python'], 'Palo Alto, CA', 45, NOW(), NOW()),
+    (2, 'Jessica Martinez', 'Self-taught developer making a career transition from marketing. Building projects to strengthen my portfolio.', ARRAY['React', 'JavaScript', 'Node.js', 'Git'], 'Denver, CO', 78, NOW(), NOW()),
+    (3, 'Ryan Park', 'Recent bootcamp graduate specializing in full-stack development. Looking for guidance on landing my first dev job.', ARRAY['React', 'Express', 'MongoDB', 'JavaScript'], 'New York, NY', 32, NOW(), NOW()),
+    (4, 'Zoe Adams', 'Data science enthusiast with a background in mathematics. Exploring machine learning and data visualization.', ARRAY['Python', 'Pandas', 'NumPy', 'Matplotlib'], 'Boston, MA', 56, NOW(), NOW())
+  `;
 
-  // Create Mentees
-  const mentee1 = await prisma.mentee.create({
-    data: {
-      name: 'Alex Rodriguez',
-      bio: 'Computer Science student passionate about web development',
-      skills: ['HTML', 'CSS', 'JavaScript', 'Python'],
-      location: 'Austin, TX',
-      reputation: 120,
-    },
-  })
-
-  const mentee2 = await prisma.mentee.create({
-    data: {
-      name: 'Emma Davis',
-      bio: 'Career changer transitioning into software engineering',
-      skills: ['JavaScript', 'React', 'Git'],
-      location: 'New York, NY',
-      reputation: 85,
-    },
-  })
-
-  // Create Admin
-  const admin1 = await prisma.admin.create({
-    data: {
-      name: 'Platform Administrator',
-    },
-  })
+  // Create Admins
+  await prisma.$executeRaw`
+    INSERT INTO "Admin" (id, name, "createdAt", "updatedAt")
+    VALUES 
+    (1, 'System Admin', NOW(), NOW()),
+    (2, 'Platform Manager', NOW(), NOW())
+  `;
 
   // Create Auth Credentials
-  await prisma.authCredentials.create({
-    data: {
-      email: 'sarah.johnson@mentorstack.com',
-      password: 'hashed_password_here', // In real app, this would be properly hashed
-      role: Role.mentor,
-      userId: mentor1.id,
-    },
-  })
+  const hashedPassword = await bcrypt.hash('password123', 10);
 
-  await prisma.authCredentials.create({
-    data: {
-      email: 'michael.chen@mentorstack.com',
-      password: 'hashed_password_here',
-      role: Role.mentor,
-      userId: mentor2.id,
-    },
-  })
+  await prisma.$executeRaw`
+    INSERT INTO "AuthCredentials" (email, password, role, "userId", "createdAt")
+    VALUES 
+    ('sarah.chen@email.com', ${hashedPassword}, 'mentor', 1, NOW()),
+    ('marcus.rodriguez@email.com', ${hashedPassword}, 'mentor', 2, NOW()),
+    ('emily.wang@email.com', ${hashedPassword}, 'mentor', 3, NOW()),
+    ('david.kumar@email.com', ${hashedPassword}, 'mentor', 4, NOW()),
+    ('alex.thompson@email.com', ${hashedPassword}, 'mentee', 1, NOW()),
+    ('jessica.martinez@email.com', ${hashedPassword}, 'mentee', 2, NOW()),
+    ('ryan.park@email.com', ${hashedPassword}, 'mentee', 3, NOW()),
+    ('zoe.adams@email.com', ${hashedPassword}, 'mentee', 4, NOW()),
+    ('admin@mentorstack.com', ${hashedPassword}, 'admin', 1, NOW()),
+    ('manager@mentorstack.com', ${hashedPassword}, 'admin', 2, NOW())
+  `;
 
-  await prisma.authCredentials.create({
-    data: {
-      email: 'alex.rodriguez@mentorstack.com',
-      password: 'hashed_password_here',
-      role: Role.mentee,
-      userId: mentee1.id,
-    },
-  })
+  // Create MentorshipRequests
+  await prisma.$executeRaw`
+    INSERT INTO "MentorshipRequest" ("mentorId", "menteeId", status, "requestMessage", "createdAt", "updatedAt")
+    VALUES 
+    (1, 1, 'accepted', 'I would love guidance on React best practices and career advice.', NOW(), NOW()),
+    (2, 2, 'pending', 'Looking for help with backend development and system design.', NOW(), NOW()),
+    (3, 4, 'accepted', 'Need mentorship in data science and machine learning.', NOW(), NOW()),
+    (4, 3, 'rejected', 'Interested in mobile development guidance.', NOW(), NOW())
+  `;
 
-  await prisma.authCredentials.create({
-    data: {
-      email: 'emma.davis@mentorstack.com',
-      password: 'hashed_password_here',
-      role: Role.mentee,
-      userId: mentee2.id,
-    },
-  })
+  // Create Connections (for accepted mentorships)
+  await prisma.$executeRaw`
+    INSERT INTO "Connection" (id, "mentorId", "menteeId", "acceptedAt", "updatedAt")
+    VALUES 
+    (1, 1, 1, NOW(), NOW()),
+    (2, 3, 4, NOW(), NOW())
+  `;
 
-  await prisma.authCredentials.create({
-    data: {
-      email: 'admin@mentorstack.com',
-      password: 'hashed_password_here',
-      role: Role.admin,
-      userId: admin1.id,
-    },
-  })
-
-  // Create Mentorship Requests
-  const mentorshipRequest1 = await prisma.mentorshipRequest.create({
-    data: {
-      mentorId: mentor1.id,
-      menteeId: mentee1.id,
-      status: 'accepted',
-      requestMessage: 'Hi! I would love to learn web development from you.',
-    },
-  })
-
-  // Create Connections
-  const connection1 = await prisma.connection.create({
-    data: {
-      mentorId: mentor1.id,
-      menteeId: mentee1.id,
-    },
-  })
-
-  // Create Conversation
-  const conversation1 = await prisma.conversation.create({
-    data: {
-      connectionId: connection1.id,
-    },
-  })
+  // Create Conversations
+  await prisma.$executeRaw`
+    INSERT INTO "Conversation" (id, "connectionId", "createdAt", "updatedAt")
+    VALUES 
+    (1, 1, NOW(), NOW()),
+    (2, 2, NOW(), NOW())
+  `;
 
   // Create Messages
-  await prisma.message.create({
-    data: {
-      conversationId: conversation1.id,
-      senderRole: Role.mentor,
-      senderId: mentor1.id,
-      message: 'Welcome! I\'m excited to mentor you in your web development journey.',
-    },
-  })
+  await prisma.$executeRaw`
+    INSERT INTO "Message" ("conversationId", "senderRole", "senderId", message, "isRead", "timestamp", "updatedAt")
+    VALUES 
+    (1, 'mentee', 1, 'Hi Sarah! Thanks for accepting my mentorship request. I really appreciate it!', false, NOW(), NOW()),
+    (1, 'mentor', 1, 'Hi Alex! I am excited to help you on your journey. What specific areas would you like to focus on first?', false, NOW(), NOW()),
+    (1, 'mentee', 1, 'I would love to improve my React skills and learn about best practices for larger applications.', false, NOW(), NOW()),
+    (2, 'mentee', 4, 'Hello Emily! I am thrilled to work with you on data science projects.', false, NOW(), NOW()),
+    (2, 'mentor', 3, 'Hi Zoe! Let us start by discussing your current projects and goals in data science.', false, NOW(), NOW())
+  `;
 
-  await prisma.message.create({
-    data: {
-      conversationId: conversation1.id,
-      senderRole: Role.mentee,
-      senderId: mentee1.id,
-      message: 'Thank you so much! I\'m really looking forward to learning from you.',
-    },
-  })
+  // Create Tags
+  await prisma.$executeRaw`
+    INSERT INTO "Tag" (id, name, description, "createdAt", "updatedAt")
+    VALUES 
+    (1, 'JavaScript', 'JavaScript programming language', NOW(), NOW()),
+    (2, 'React', 'React.js library for building user interfaces', NOW(), NOW()),
+    (3, 'Node.js', 'Node.js runtime for server-side JavaScript', NOW(), NOW()),
+    (4, 'Python', 'Python programming language', NOW(), NOW()),
+    (5, 'Career', 'Career development and job search', NOW(), NOW()),
+    (6, 'Beginner', 'Questions suitable for beginners', NOW(), NOW()),
+    (7, 'Database', 'Database design and queries', NOW(), NOW()),
+    (8, 'API', 'API development and integration', NOW(), NOW()),
+    (9, 'Frontend', 'Frontend development', NOW(), NOW()),
+    (10, 'Backend', 'Backend development', NOW(), NOW()),
+    (11, 'Machine Learning', 'ML and AI topics', NOW(), NOW()),
+    (12, 'Mobile', 'Mobile app development', NOW(), NOW())
+  `;
 
   // Create Questions
-  const question1 = await prisma.question.create({
-    data: {
-      menteeId: mentee2.id,
-      title: 'How to get started with React?',
-      body: 'I\'m new to React and feeling overwhelmed. What\'s the best way to start learning?',
-      tags: ['React', 'JavaScript', 'Beginner', 'Frontend'],
-    },
-  })
+  await prisma.$executeRaw`
+    INSERT INTO "Question" (id, "menteeId", title, body, "createdAt", "updatedAt")
+    VALUES 
+    (1, 1, 'How do I handle state management in large React applications?', 'I am working on a React project that is growing quite large, and I am struggling with state management. Currently using useState and useContext, but it is getting messy with prop drilling and complex state updates.', '2024-08-20T10:00:00Z', '2024-08-20T10:00:00Z'),
+    (2, 2, 'Best practices for REST API design?', 'I am building my first REST API using Node.js and Express. I want to make sure I am following industry best practices from the start.', '2024-08-22T14:30:00Z', '2024-08-22T14:30:00Z'),
+    (3, 3, 'How to prepare for technical interviews as a junior developer?', 'I am a recent bootcamp graduate and have been applying for junior developer positions. I am getting some interview opportunities but struggling with the technical portions.', '2024-08-25T09:15:00Z', '2024-08-25T09:15:00Z')
+  `;
+
+  // Create Question-Tag relationships
+  await prisma.$executeRaw`
+    INSERT INTO "QuestionTag" ("questionId", "tagId")
+    VALUES 
+    (1, 2), (1, 1), (2, 3), (2, 8), (3, 5)
+  `;
 
   // Create Answers
-  await prisma.answer.create({
-    data: {
-      questionId: question1.id,
-      mentorId: mentor1.id,
-      body: 'Start with the official React tutorial and build small projects. Focus on understanding components and state management first.',
-      upvotes: 5,
-    },
-  })
+  await prisma.$executeRaw`
+    INSERT INTO "Answer" (id, "questionId", "userId", "userRole", body, "createdAt", "updatedAt")
+    VALUES 
+    (1, 1, 1, 'mentor', 'For state management in large React apps, I recommend Zustand or Redux Toolkit. They provide better structure than Context API.', NOW(), NOW()),
+    (2, 2, 2, 'mentor', 'Focus on REST conventions: use proper HTTP methods, status codes, and consistent URL patterns.', NOW(), NOW()),
+    (3, 3, 1, 'mentor', 'Practice algorithms daily, build portfolio projects, and prepare for behavioral questions.', NOW(), NOW())
+  `;
+
+  // Create Question Votes
+  await prisma.$executeRaw`
+    INSERT INTO "QuestionVote" ("userRole", "userId", "questionId", "voteType", "createdAt", "updatedAt")
+    VALUES 
+    ('mentor', 2, 1, 'upvote', NOW(), NOW()),
+    ('mentee', 2, 1, 'upvote', NOW(), NOW()),
+    ('mentor', 1, 2, 'upvote', NOW(), NOW())
+  `;
+
+  // Create Answer Votes
+  await prisma.$executeRaw`
+    INSERT INTO "AnswerVote" ("userRole", "userId", "answerId", "voteType", "createdAt", "updatedAt")
+    VALUES 
+    ('mentee', 1, 1, 'upvote', NOW(), NOW()),
+    ('mentee', 2, 2, 'upvote', NOW(), NOW()),
+    ('mentee', 3, 3, 'upvote', NOW(), NOW())
+  `;
 
   // Create Articles
-  const article1 = await prisma.article.create({
-    data: {
-      authorId: mentor2.id,
-      title: 'Getting Started with Cloud Architecture',
-      content: 'Cloud architecture is fundamental in modern software development...',
-      upvotes: 12,
-      downvotes: 1,
-    },
-  })
+  await prisma.$executeRaw`
+    INSERT INTO "Article" (id, "authorId", "title", "content", "imageUrls", "createdAt", "updatedAt")
+    VALUES 
+    (1, 1, 'Getting Started with React Hooks', 'React Hooks revolutionized how we write functional components. In this article, we will explore useState, useEffect, and custom hooks with practical examples.', ARRAY[]::text[], NOW(), NOW()),
+    (2, 2, 'Building Scalable APIs with Node.js', 'Learn how to build robust and scalable REST APIs using Node.js and Express. We will cover middleware, error handling, and authentication.', ARRAY[]::text[], NOW(), NOW()),
+    (3, 3, 'Machine Learning for Beginners', 'Dive into the world of machine learning with Python. This guide covers linear regression and neural networks with hands-on examples.', ARRAY[]::text[], NOW(), NOW()),
+    (4, 4, 'Mobile App Architecture Best Practices', 'Designing mobile applications requires careful consideration of architecture patterns. We will explore MVVM and Clean Architecture.', ARRAY[]::text[], NOW(), NOW()),
+    (5, 1, 'The Future of Frontend Development', 'Frontend development is evolving rapidly with new frameworks and tools. Lets explore the trends shaping the future.', ARRAY[]::text[], NOW(), NOW())
+  `;
+
+  // Create Article Tags
+  await prisma.$executeRaw`
+    INSERT INTO "ArticleTag" ("articleId", "tagId")
+    VALUES 
+    (1, 2), (2, 3), (3, 11), (4, 12), (5, 9)
+  `;
+
+  // Create Article Votes  
+  await prisma.$executeRaw`
+    INSERT INTO "ArticleVote" ("menteeId", "articleId", "voteType", "createdAt", "updatedAt")
+    VALUES 
+    (1, 1, 'upvote', NOW(), NOW()),
+    (2, 1, 'upvote', NOW(), NOW()),
+    (3, 2, 'upvote', NOW(), NOW()),
+    (4, 3, 'upvote', NOW(), NOW()),
+    (1, 4, 'upvote', NOW(), NOW())
+  `;
 
   // Create Communities
-  const community1 = await prisma.community.create({
-    data: {
-      name: 'Web Development',
-      description: 'A community for web developers to share knowledge and experiences',
-      skills: ['HTML', 'CSS', 'JavaScript', 'React', 'Vue', 'Angular'],
-      createdBy: mentor1.id,
-    },
-  })
-
-  const community2 = await prisma.community.create({
-    data: {
-      name: 'Cloud & DevOps',
-      description: 'Discussions about cloud platforms, DevOps practices, and infrastructure',
-      skills: ['AWS', 'Azure', 'Docker', 'Kubernetes', 'Terraform'],
-      createdBy: mentor2.id,
-    },
-  })
+  await prisma.$executeRaw`
+    INSERT INTO "Community" (id, "name", "description", "skills", "createdBy", "createdAt", "updatedAt")
+    VALUES 
+    (1, 'React Developers', 'A community for React developers to share knowledge and best practices', ARRAY['React', 'JavaScript'], 1, NOW(), NOW()),
+    (2, 'Full Stack Engineers', 'For developers working across the entire stack', ARRAY['Node.js', 'React', 'Database'], 2, NOW(), NOW()),
+    (3, 'Data Science Hub', 'Machine learning and data analysis discussions', ARRAY['Python', 'ML', 'Data'], 3, NOW(), NOW())
+  `;
 
   // Create Community Members
-  await prisma.communityMember.create({
-    data: {
-      communityId: community1.id,
-      userRole: Role.mentor,
-      userId: mentor1.id,
-    },
-  })
-
-  await prisma.communityMember.create({
-    data: {
-      communityId: community1.id,
-      userRole: Role.mentee,
-      userId: mentee1.id,
-    },
-  })
+  await prisma.$executeRaw`
+    INSERT INTO "CommunityMember" ("communityId", "userRole", "userId", "joinedAt", "updatedAt")
+    VALUES 
+    (1, 'mentor', 1, NOW(), NOW()),
+    (1, 'mentee', 1, NOW(), NOW()),
+    (1, 'mentee', 2, NOW(), NOW()),
+    (2, 'mentor', 2, NOW(), NOW()),
+    (2, 'mentee', 3, NOW(), NOW()),
+    (3, 'mentor', 3, NOW(), NOW()),
+    (3, 'mentee', 4, NOW(), NOW())
+  `;
 
   // Create Community Posts
-  const communityPost1 = await prisma.communityPost.create({
-    data: {
-      communityId: community1.id,
-      userRole: Role.mentor,
-      userId: mentor1.id,
-      title: 'Best Practices for React State Management',
-      content: 'Here are some tips for managing state effectively in React applications...',
-    },
-  })
+  await prisma.$executeRaw`
+    INSERT INTO "CommunityPost" (id, "communityId", "userRole", "userId", "title", "content", "imageUrls", "createdAt", "updatedAt")
+    VALUES 
+    (1, 1, 'mentor', 1, 'React 18 New Features', 'React 18 introduces amazing concurrent features that improve performance significantly.', ARRAY[]::text[], NOW(), NOW()),
+    (2, 2, 'mentor', 2, 'API Security Best Practices', 'Here are essential security practices every backend developer should follow.', ARRAY[]::text[], NOW(), NOW()),
+    (3, 3, 'mentor', 3, 'Getting Started with TensorFlow', 'A beginners guide to building your first neural network with TensorFlow.', ARRAY[]::text[], NOW(), NOW())
+  `;
+
+  // Create Community Post Votes
+  await prisma.$executeRaw`
+    INSERT INTO "CommunityPostVote" ("userRole", "userId", "postId", "voteType", "createdAt", "updatedAt")
+    VALUES 
+    ('mentee', 1, 1, 'upvote', NOW(), NOW()),
+    ('mentee', 2, 1, 'upvote', NOW(), NOW()),
+    ('mentee', 3, 2, 'upvote', NOW(), NOW()),
+    ('mentee', 4, 3, 'upvote', NOW(), NOW())
+  `;
 
   // Create Badges
-  const badge1 = await prisma.badge.create({
-    data: {
-      name: 'First Question',
-      description: 'Asked your first question',
-      reputationThreshold: 10,
-    },
-  })
+  await prisma.$executeRaw`
+    INSERT INTO "Badge" (id, name, description, "reputationThreshold", "createdAt", "updatedAt")
+    VALUES 
+    (1, 'First Question', 'Asked your first question', 0, NOW(), NOW()),
+    (2, 'Helpful Answer', 'Received 10+ upvotes on an answer', 50, NOW(), NOW()),
+    (3, 'Expert Mentor', 'Achieved 500+ reputation points', 500, NOW(), NOW()),
+    (4, 'Community Leader', 'Achieved 1000+ reputation points', 1000, NOW(), NOW())
+  `;
 
-  const badge2 = await prisma.badge.create({
-    data: {
-      name: 'Helpful Mentor',
-      description: 'Received 10 upvotes on answers',
-      reputationThreshold: 100,
-    },
-  })
-
-  // Create Article Votes
-  await prisma.articleVote.create({
-    data: {
-      menteeId: mentee1.id,
-      articleId: article1.id,
-      voteType: VoteType.upvote,
-    },
-  })
-
-  // Create AI Logs
-  await prisma.aiLog.create({
-    data: {
-      menteeId: mentee1.id,
-      prompt: 'Explain the difference between let and const in JavaScript',
-      response: 'let allows reassignment while const creates immutable bindings...',
-    },
-  })
-
-  // Create Bookmarks
-  await prisma.bookmark.create({
-    data: {
-      menteeId: mentee1.id,
-      contentType: 'article',
-      contentId: article1.id,
-    },
-  })
+  // Create User Badges
+  await prisma.$executeRaw`
+    INSERT INTO "UserBadge" ("userId", "userRole", "badgeId", "awardedAt", "updatedAt")
+    VALUES 
+    (1, 'mentee', 1, NOW(), NOW()),
+    (1, 'mentor', 3, NOW(), NOW()),
+    (1, 'mentor', 4, NOW(), NOW()),
+    (2, 'mentor', 2, NOW(), NOW()),
+    (3, 'mentor', 4, NOW(), NOW())
+  `;
 
   // Create Reputation History
-  await prisma.reputationHistory.create({
-    data: {
-      userId: mentee1.id,
-      userRole: Role.mentee,
-      change: 10,
-      reason: 'Asked first question',
-    },
-  })
+  await prisma.$executeRaw`
+    INSERT INTO "ReputationHistory" ("userId", "userRole", change, reason, "createdAt", "updatedAt")
+    VALUES 
+    (1, 'mentor', 10, 'Answer upvoted', NOW(), NOW()),
+    (1, 'mentor', 15, 'Answer accepted', NOW(), NOW()),
+    (2, 'mentor', 10, 'Answer upvoted', NOW(), NOW()),
+    (3, 'mentor', 20, 'Article published', NOW(), NOW()),
+    (1, 'mentee', 5, 'Question upvoted', NOW(), NOW())
+  `;
 
-  console.log('✅ Database seeding completed successfully!')
-  console.log(`Created:`)
-  console.log(`- 2 Mentors`)
-  console.log(`- 2 Mentees`) 
-  console.log(`- 1 Admin`)
-  console.log(`- 5 Auth credentials`)
-  console.log(`- 1 Mentorship request`)
-  console.log(`- 1 Connection`)
-  console.log(`- 1 Conversation with messages`)
-  console.log(`- 1 Question with answer`)
-  console.log(`- 1 Article`)
-  console.log(`- 2 Communities`)
-  console.log(`- 2 Badges`)
-  console.log(`- Various interactions (votes, bookmarks, AI logs)`)
+  // Create AI Logs
+  await prisma.$executeRaw`
+    INSERT INTO "AiLog" ("menteeId", prompt, response, "timestamp", "updatedAt")
+    VALUES 
+    (1, 'How do I deploy a React app?', 'You can deploy React apps using services like Vercel, Netlify, or AWS S3...', NOW(), NOW()),
+    (2, 'What is the difference between REST and GraphQL?', 'REST uses multiple endpoints while GraphQL uses a single endpoint...', NOW(), NOW()),
+    (4, 'How to start learning machine learning?', 'Begin with Python basics, then learn pandas and scikit-learn...', NOW(), NOW())
+  `;
+
+  // Create Bookmarks
+  await prisma.$executeRaw`
+    INSERT INTO "Bookmark" ("menteeId", "contentType", "contentId", "createdAt", "updatedAt")
+    VALUES 
+    (1, 'article', 1, NOW(), NOW()),
+    (1, 'question', 2, NOW(), NOW()),
+    (2, 'article', 2, NOW(), NOW()),
+    (4, 'article', 3, NOW(), NOW())
+  `;
+
+  console.log('✅ COMPREHENSIVE DATABASE SEEDING COMPLETED!');
+  console.log('📊 Created data for ALL TABLES:');
+  console.log('   - 4 Mentors + 4 Mentees + 2 Admins');
+  console.log('   - 10 Auth Credentials');
+  console.log('   - 4 Mentorship Requests');
+  console.log('   - 2 Connections + 2 Conversations + 5 Messages');
+  console.log('   - 12 Tags');
+  console.log('   - 3 Questions + 5 Question Tags + 3 Answers');
+  console.log('   - 3 Question Votes + 3 Answer Votes');
+  console.log('   - 5 Articles + 5 Article Tags + 5 Article Votes');
+  console.log('   - 3 Communities + 7 Members + 3 Posts + 4 Post Votes');
+  console.log('   - 4 Badges + 5 User Badges');
+  console.log('   - 5 Reputation History records');
+  console.log('   - 3 AI Logs + 4 Bookmarks');
+  console.log('');
+  console.log('🔑 Test Credentials (password: password123):');
+  console.log('   📧 sarah.chen@email.com (Mentor)');
+  console.log('   📧 alex.thompson@email.com (Mentee)');
+  console.log('   📧 admin@mentorstack.com (Admin)');
 }
 
 main()
   .catch((e) => {
-    console.error('❌ Error during seeding:', e)
-    process.exit(1)
+    console.error(e);
+    process.exit(1);
   })
   .finally(async () => {
-    await prisma.$disconnect()
+    await prisma.$disconnect();
+  });
+
+main()
+  .catch((e) => {
+    console.error(e);
+    process.exit(1);
   })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });

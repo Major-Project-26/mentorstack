@@ -1,0 +1,14 @@
+[
+    {
+        "id": 1,
+        "communityId": 1,
+        "userRole": "mentor",
+        "userId": 1
+    },
+    {
+        "id": 2,
+        "communityId": 2,
+        "userRole": "mentee",
+        "userId": 2
+    }
+]

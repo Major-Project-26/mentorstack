@@ -1,0 +1,16 @@
+[
+    {
+        "id": 1,
+        "mentorId": 1,
+        "menteeId": 1,
+        "status": "pending",
+        "requestMessage": "I’d love guidance in ML."
+    },
+    {
+        "id": 2,
+        "mentorId": 2,
+        "menteeId": 2,
+        "status": "accepted",
+        "requestMessage": "Need help with React projects."
+    }
+]

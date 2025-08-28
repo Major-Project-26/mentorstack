@@ -97,6 +97,27 @@ router.get('/:id', async (req: any, res: any) => {
   }
 });
 
+// Check if user is a member of a community
+router.get('/:id/membership', authenticateToken, async (req: any, res: any) => {
+  try {
+    const { id } = req.params;
+    const { userId, role } = req.user;
+
+    const member = await prisma.communityMember.findFirst({
+      where: {
+        communityId: parseInt(id),
+        userId: userId,
+        userRole: role as any
+      }
+    });
+
+    res.json({ isMember: !!member });
+  } catch (error) {
+    console.error('Error checking membership:', error);
+    res.status(500).json({ error: 'Failed to check membership' });
+  }
+});
+
 // Create a new community
 router.post('/', authenticateToken, async (req: any, res: any) => {
   try {
@@ -157,13 +178,11 @@ router.post('/:id/join', authenticateToken, async (req: any, res: any) => {
     }
 
     // Check if user is already a member
-    const existingMember = await prisma.communityMember.findUnique({
+    const existingMember = await prisma.communityMember.findFirst({
       where: {
-        communityId_userId_userRole: {
-          communityId: parseInt(id),
-          userId: userId,
-          userRole: role as any
-        }
+        communityId: parseInt(id),
+        userId: userId,
+        userRole: role as any
       }
     });
 
@@ -192,13 +211,11 @@ router.delete('/:id/leave', authenticateToken, async (req: any, res: any) => {
     const { id } = req.params;
     const { userId, role } = req.user;
 
-    const member = await prisma.communityMember.findUnique({
+    const member = await prisma.communityMember.findFirst({
       where: {
-        communityId_userId_userRole: {
-          communityId: parseInt(id),
-          userId: userId,
-          userRole: role as any
-        }
+        communityId: parseInt(id),
+        userId: userId,
+        userRole: role as any
       }
     });
 
@@ -231,13 +248,11 @@ router.post('/:id/posts', authenticateToken, async (req: any, res: any) => {
     }
 
     // Check if user is a member of the community
-    const member = await prisma.communityMember.findUnique({
+    const member = await prisma.communityMember.findFirst({
       where: {
-        communityId_userId_userRole: {
-          communityId: parseInt(id),
-          userId: userId,
-          userRole: role as any
-        }
+        communityId: parseInt(id),
+        userId: userId,
+        userRole: role as any
       }
     });
 
@@ -269,6 +284,23 @@ router.get('/:id/posts', async (req: any, res: any) => {
     const { id } = req.params;
     const { page = 1, limit = 10 } = req.query;
 
+    // Check if user is authenticated (optional for viewing posts)
+    let currentUserId = null;
+    let currentUserRole = null;
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+
+    if (token) {
+      try {
+        const jwt = require('jsonwebtoken');
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret') as any;
+        currentUserId = decoded.userId;
+        currentUserRole = decoded.role;
+      } catch (err) {
+        // Token invalid, but still allow viewing posts
+      }
+    }
+
     const posts = await prisma.communityPost.findMany({
       where: { communityId: parseInt(id) },
       include: {
@@ -286,7 +318,53 @@ router.get('/:id/posts', async (req: any, res: any) => {
       take: parseInt(limit as string)
     });
 
-    res.json(posts);
+    // Fetch user details for each post
+    const postsWithUserDetails = await Promise.all(
+      posts.map(async (post) => {
+        let userName = `User${post.userId}`;
+        
+        try {
+          if (post.userRole === 'mentor') {
+            const mentor = await prisma.mentor.findUnique({
+              where: { id: post.userId },
+              select: { name: true }
+            });
+            if (mentor) userName = mentor.name;
+          } else if (post.userRole === 'mentee') {
+            const mentee = await prisma.mentee.findUnique({
+              where: { id: post.userId },
+              select: { name: true }
+            });
+            if (mentee) userName = mentee.name;
+          }
+        } catch (error) {
+          console.error('Error fetching user details:', error);
+        }
+
+        return {
+          ...post,
+          userName
+        };
+      })
+    );
+
+    // Add user vote status to each post
+    const postsWithUserVotes = postsWithUserDetails.map(post => {
+      let userVote = null;
+      if (currentUserId && currentUserRole) {
+        const userVoteRecord = post.votes.find(vote => 
+          vote.userId === currentUserId && vote.userRole === currentUserRole
+        );
+        userVote = userVoteRecord ? userVoteRecord.voteType : null;
+      }
+
+      return {
+        ...post,
+        userVote
+      };
+    });
+
+    res.json(postsWithUserVotes);
   } catch (error) {
     console.error('Error fetching posts:', error);
     res.status(500).json({ error: 'Failed to fetch posts' });
@@ -305,13 +383,11 @@ router.post('/:communityId/posts/:postId/vote', authenticateToken, async (req: a
     }
 
     // Check if user is a member
-    const member = await prisma.communityMember.findUnique({
+    const member = await prisma.communityMember.findFirst({
       where: {
-        communityId_userId_userRole: {
-          communityId: parseInt(communityId),
-          userId: userId,
-          userRole: role as any
-        }
+        communityId: parseInt(communityId),
+        userId: userId,
+        userRole: role as any
       }
     });
 
@@ -320,22 +396,29 @@ router.post('/:communityId/posts/:postId/vote', authenticateToken, async (req: a
     }
 
     // Check if user already voted
-    const existingVote = await prisma.communityPostVote.findUnique({
+    const existingVote = await prisma.communityPostVote.findFirst({
       where: {
-        userId_postId_userRole: {
-          userId: userId,
-          postId: parseInt(postId),
-          userRole: role as any
-        }
+        userId: userId,
+        postId: parseInt(postId),
+        userRole: role as any
       }
     });
 
     if (existingVote) {
-      // Update existing vote
-      await prisma.communityPostVote.update({
-        where: { id: existingVote.id },
-        data: { voteType: voteType as any }
-      });
+      // If user clicks the same vote type, remove the vote
+      if (existingVote.voteType === voteType) {
+        await prisma.communityPostVote.delete({
+          where: { id: existingVote.id }
+        });
+        res.json({ message: 'Vote removed successfully' });
+      } else {
+        // Update existing vote to new type
+        await prisma.communityPostVote.update({
+          where: { id: existingVote.id },
+          data: { voteType: voteType as any }
+        });
+        res.json({ message: 'Vote updated successfully' });
+      }
     } else {
       // Create new vote
       await prisma.communityPostVote.create({
@@ -346,9 +429,8 @@ router.post('/:communityId/posts/:postId/vote', authenticateToken, async (req: a
           voteType: voteType as any
         }
       });
+      res.json({ message: 'Vote recorded successfully' });
     }
-
-    res.json({ message: 'Vote recorded successfully' });
   } catch (error) {
     console.error('Error voting on post:', error);
     res.status(500).json({ error: 'Failed to vote on post' });

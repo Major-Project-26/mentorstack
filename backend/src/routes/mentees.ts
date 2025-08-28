@@ -53,7 +53,6 @@ router.get('/:id', authenticateToken, async (req: any, res: any) => {
         questions: {
           orderBy: { createdAt: 'desc' }
         },
-        bookmarks: true,
         mentorshipRequests: true
       }
     });
@@ -71,7 +70,6 @@ router.get('/:id', authenticateToken, async (req: any, res: any) => {
     // Calculate stats
     const stats = {
       questionsAsked: mentee.questions.length,
-      bookmarksCount: mentee.bookmarks.length,
       mentorshipRequestsCount: mentee.mentorshipRequests.length
     };
 
@@ -109,7 +107,6 @@ router.get('/profile/me', authenticateToken, async (req: any, res: any) => {
         questions: {
           orderBy: { createdAt: 'desc' }
         },
-        bookmarks: true,
         mentorshipRequests: true
       }
     });
@@ -127,7 +124,6 @@ router.get('/profile/me', authenticateToken, async (req: any, res: any) => {
     // Calculate stats
     const stats = {
       questionsAsked: mentee.questions.length,
-      bookmarksCount: mentee.bookmarks.length,
       mentorshipRequestsCount: mentee.mentorshipRequests.length
     };
 

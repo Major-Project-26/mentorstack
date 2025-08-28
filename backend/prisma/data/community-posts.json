@@ -1,0 +1,20 @@
+[
+    {
+        "id": 1,
+        "communityId": 1,
+        "userRole": "mentor",
+        "userId": 1,
+        "title": "Best ML resources",
+        "content": "Sharing my ML roadmap",
+        "imageUrls": []
+    },
+    {
+        "id": 2,
+        "communityId": 2,
+        "userRole": "mentee",
+        "userId": 2,
+        "title": "Struggling with React",
+        "content": "Any tips?",
+        "imageUrls": []
+    }
+]

@@ -1,0 +1,93 @@
+[
+    {
+        "id": 1,
+        "name": "javascript",
+        "description": "Questions and articles about JavaScript programming."
+    },
+    {
+        "id": 2,
+        "name": "typescript",
+        "description": "Covers TypeScript, a typed superset of JavaScript."
+    },
+    {
+        "id": 3,
+        "name": "python",
+        "description": "All topics related to Python programming language."
+    },
+    {
+        "id": 4,
+        "name": "java",
+        "description": "Covers Java programming language and JVM-related topics."
+    },
+    {
+        "id": 5,
+        "name": "c++",
+        "description": "Covers C++ language, STL, and related programming concepts."
+    },
+    {
+        "id": 6,
+        "name": "react",
+        "description": "Front-end library for building UI components."
+    },
+    {
+        "id": 7,
+        "name": "svelte",
+        "description": "Framework for fast web applications using compiled components."
+    },
+    {
+        "id": 8,
+        "name": "nodejs",
+        "description": "Server-side JavaScript runtime environment."
+    },
+    {
+        "id": 9,
+        "name": "backend",
+        "description": "Covers APIs, databases, and backend architectures."
+    },
+    {
+        "id": 10,
+        "name": "frontend",
+        "description": "Covers HTML, CSS, and front-end frameworks/libraries."
+    },
+    {
+        "id": 11,
+        "name": "database",
+        "description": "Covers SQL, NoSQL, schema design, and database optimizations."
+    },
+    {
+        "id": 12,
+        "name": "prisma",
+        "description": "Topics related to Prisma ORM and database access."
+    },
+    {
+        "id": 13,
+        "name": "graphql",
+        "description": "API query language and runtime for APIs."
+    },
+    {
+        "id": 14,
+        "name": "ai-ml",
+        "description": "Artificial Intelligence and Machine Learning concepts."
+    },
+    {
+        "id": 15,
+        "name": "devops",
+        "description": "Deployment, CI/CD, containerization, cloud tools."
+    },
+    {
+        "id": 16,
+        "name": "nlp",
+        "description": "Natural Language Processing concepts."
+    }
+    ,
+    {
+        "id": 17,
+        "name": "aws",
+        "description": "Amazon Web Services and cloud infrastructure topics."
+    },
+    {
+        "id": 18,
+        "name": "cloud",
+        "description": "General cloud computing, platforms, and services."
+    }
+]

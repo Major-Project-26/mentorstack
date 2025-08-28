@@ -17,7 +17,7 @@ const Layout = ({
   sidebarProps = {},
   navbarProps = {},
 }: LayoutProps) => {
-  const [sidebarOpen, setSidebarOpen] = useState(false); // Default to false (hidden)
+  const [sidebarOpen, setSidebarOpen] = useState(true); // Default to true (visible)
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
@@ -29,7 +29,7 @@ const Layout = ({
 
   return (
     <div className="flex h-screen bg-[var(--color-neutral-dark)] text-[var(--color-tertiary)]">
-      {/* Sidebar - Only shows when sidebarOpen is true */}
+      {/* Sidebar - Shows by default when showSidebar is true */}
       {showSidebar && (
         <div className={`${sidebarOpen ? "block" : "hidden"}`}>
           <Sidebar

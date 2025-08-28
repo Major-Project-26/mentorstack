@@ -57,6 +57,15 @@ export interface Question {
   createdAt: string;
   authorName: string;
   answerCount?: number;
+  answers?: Answer[];
+}
+
+export interface Answer {
+  id: number;
+  questionId: number;
+  content: string;
+  authorName: string;
+  createdAt: string;
 }
 
 export interface Community {
@@ -78,12 +87,14 @@ export interface CommunityPost {
   communityId: number;
   userRole: string;
   userId: number;
+  userName?: string;
   title: string;
   content: string;
   imageUrls: string[];
   createdAt: string;
   updatedAt: string;
   votes: CommunityPostVote[];
+  userVote: 'upvote' | 'downvote' | null;
   _count: {
     votes: number;
   };
@@ -280,6 +291,56 @@ class AuthAPI {
     return response.json();
   }
 
+  async getQuestion(questionId: number): Promise<Question> {
+    const response = await fetch(`${API_BASE_URL}/questions/${questionId}`, {
+      method: 'GET',
+      headers: this.getHeaders(true),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to get question');
+    }
+
+    return response.json();
+  }
+
+  // Note: Questions don't have voting system in current schema
+  // async voteOnQuestion(questionId: number, voteType: 'upvote' | 'downvote'): Promise<{ message: string }> {
+  //   // Not implemented - questions don't have voting in schema
+  // }
+
+  // Note: Answer voting has been disabled in the UI
+  // async voteOnAnswer(questionId: number, answerId: number, voteType: 'upvote' | 'downvote'): Promise<{ message: string }> {
+  //   const response = await fetch(`${API_BASE_URL}/questions/${questionId}/answers/${answerId}/vote`, {
+  //     method: 'POST',
+  //     headers: this.getHeaders(true),
+  //     body: JSON.stringify({ voteType }),
+  //   });
+
+  //   if (!response.ok) {
+  //     const error = await response.json();
+  //     throw new Error(error.message || 'Failed to vote on answer');
+  //   }
+
+  //   return response.json();
+  // }
+
+  async submitAnswer(questionId: number, content: string): Promise<{ message: string; answer: Answer }> {
+    const response = await fetch(`${API_BASE_URL}/questions/${questionId}/answers`, {
+      method: 'POST',
+      headers: this.getHeaders(true),
+      body: JSON.stringify({ content }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to submit answer');
+    }
+
+    return response.json();
+  }
+
   // Community methods
   async getCommunities(): Promise<Community[]> {
     const response = await fetch(`${API_BASE_URL}/communities`, {
@@ -352,10 +413,24 @@ class AuthAPI {
     return response.json();
   }
 
+  async checkCommunityMembership(communityId: number): Promise<{ isMember: boolean }> {
+    const response = await fetch(`${API_BASE_URL}/communities/${communityId}/membership`, {
+      method: 'GET',
+      headers: this.getHeaders(true),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to check membership');
+    }
+
+    return response.json();
+  }
+
   async getCommunityPosts(communityId: number, page = 1, limit = 10): Promise<CommunityPost[]> {
     const response = await fetch(`${API_BASE_URL}/communities/${communityId}/posts?page=${page}&limit=${limit}`, {
       method: 'GET',
-      headers: this.getHeaders(),
+      headers: this.getHeaders(true),
     });
 
     if (!response.ok) {
@@ -472,6 +547,23 @@ class AuthAPI {
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.message || 'Failed to get popular tags');
+    }
+
+    return response.json();
+  }
+
+  async createArticle(formData: FormData): Promise<{ message: string; article: Article }> {
+    const response = await fetch(`${API_BASE_URL}/articles`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${this.getToken()}`,
+      },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to create article');
     }
 
     return response.json();

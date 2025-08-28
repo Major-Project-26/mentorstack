@@ -1,0 +1,14 @@
+[
+    {
+        "id": 1,
+        "menteeId": 1,
+        "prompt": "Explain transformers in ML",
+        "response": "Transformers are deep learning models for NLP."
+    },
+    {
+        "id": 2,
+        "menteeId": 2,
+        "prompt": "Best way to learn React?",
+        "response": "Start with official docs and small projects."
+    }
+]

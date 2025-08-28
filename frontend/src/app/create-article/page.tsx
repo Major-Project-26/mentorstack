@@ -11,14 +11,11 @@ import {
     Image as ImageIcon,
     Table,
     Quote,
-    Minus,
     Type,
     Terminal,
     X,
     Bold,
     Italic,
-    Eye,
-    Send,
     Lightbulb,
 } from "lucide-react";
 
@@ -331,6 +328,16 @@ export default function CreateArticle() {
 
     const handleImageRemove = (index: number) => {
         setImages(images.filter((_, i) => i !== index));
+    };
+
+    const handleTagSelect = (tag: string) => {
+        if (!selectedTags.includes(tag) && selectedTags.length < 5) {
+            setSelectedTags([...selectedTags, tag]);
+        }
+    };
+
+    const handleTagRemove = (tag: string) => {
+        setSelectedTags(selectedTags.filter(t => t !== tag));
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
