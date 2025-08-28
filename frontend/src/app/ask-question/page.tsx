@@ -13,6 +13,9 @@ const QuestionForm = () => {
   const [newTag, setNewTag] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [rephraseLoading, setRephraseLoading] = useState(false);
+  const [rephrasedTitle, setRephrasedTitle] = useState('');
+  const [showRephraseSuggestion, setShowRephraseSuggestion] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -46,6 +49,40 @@ const QuestionForm = () => {
       setSelectedTags(prev => [...prev, newTag.trim()]);
       setNewTag('');
     }
+  };
+
+  const handleRephraseTitle = async () => {
+    if (!title.trim() || title.length < 10) return;
+
+    setRephraseLoading(true);
+    try {
+      const response = await fetch("http://localhost:5000/api/rephrase", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ text: title }),
+      });
+
+      const data = await response.json();
+      setRephrasedTitle(data.rephrasedText);
+      setShowRephraseSuggestion(true);
+    } catch (error) {
+      console.error(error);
+      setError('Failed to rephrase title. Please try again.');
+    }
+    setRephraseLoading(false);
+  };
+
+  const acceptRephrasedTitle = () => {
+    setTitle(rephrasedTitle);
+    setShowRephraseSuggestion(false);
+    setRephrasedTitle('');
+  };
+
+  const dismissRephraseSuggestion = () => {
+    setShowRephraseSuggestion(false);
+    setRephrasedTitle('');
   };
 
   const canProceed = () => {
@@ -165,13 +202,77 @@ const QuestionForm = () => {
                 <label className="block text-lg font-semibold text-tertiary">
                   What&apos;s your question about?
                 </label>
-                <input
-                  type="text"
-                  placeholder="e.g., How do I implement JWT authentication in Node.js?"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  className="input-field w-full p-4 text-lg rounded-xl focus:outline-none"
-                />
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="e.g., How do I implement JWT authentication in Node.js?"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    className="input-field w-full p-4 text-lg rounded-xl focus:outline-none pr-20"
+                  />
+                  {title.length >= 10 && (
+                    <button
+                      type="button"
+                      onClick={handleRephraseTitle}
+                      disabled={rephraseLoading}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 bg-primary-light hover:bg-primary-100 disabled:bg-primary-300 text-white px-3 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-1"
+                    >
+                      {rephraseLoading ? (
+                        <>
+                          <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          <span className="hidden sm:inline">Rephrasing...</span>
+                        </>
+                      ) : (
+                        <>
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                          </svg>
+                          <span className="hidden sm:inline">Rephrase</span>
+                        </>
+                      )}
+                    </button>
+                  )}
+                </div>
+                
+                {/* Rephrase Suggestion */}
+                {showRephraseSuggestion && rephrasedTitle && (
+                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4 animate-fade-in">
+                    <div className="flex items-start gap-3">
+                      <div className="flex-shrink-0 w-8 h-8 bg-primary-light rounded-full flex items-center justify-center">
+                        <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                        </svg>
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-blue-900 mb-2">AI Suggestion</h4>
+                        <p className="text-blue-800 mb-3 leading-relaxed">{rephrasedTitle}</p>
+                        <div className="flex flex-wrap gap-2">
+                          <button
+                            type="button"
+                            onClick={acceptRephrasedTitle}
+                            className="bg-primary-light hover:bg-primary-100 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-1"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                            Use This Title
+                          </button>
+                          <button
+                            type="button"
+                            onClick={dismissRephraseSuggestion}
+                            className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                          >
+                            Keep Original
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
                 <div className="flex items-center justify-between text-sm">
                   <span className={`${title.length >= 10 ? 'text-primary' : 'text-gray-400'}`}>
                     {title.length >= 10 ? '✓ Good length' : `${10 - title.length} more characters needed`}
@@ -200,6 +301,10 @@ const QuestionForm = () => {
                   <li className="flex items-start">
                     <span className="text-primary mr-2">•</span>
                     Avoid yes/no questions - ask for explanations
+                  </li>
+                  <li className="flex items-start">
+                    <span className="text-primary mr-2">•</span>
+                    Use the AI rephrase button to improve your title clarity
                   </li>
                 </ul>
               </div>
