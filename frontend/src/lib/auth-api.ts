@@ -590,6 +590,56 @@ class AuthAPI {
 
     return response.json();
   }
+
+  // Tags methods
+  async getTagContent(tagName: string): Promise<{
+    tagName: string;
+    stats: {
+      totalArticles: number;
+      totalQuestions: number;
+      totalContent: number;
+    };
+    articles: Article[];
+    questions: Question[];
+    relatedTags: Array<{
+      name: string;
+      articleCount: number;
+      questionCount: number;
+      totalCount: number;
+    }>;
+  }> {
+    const response = await fetch(`${API_BASE_URL}/tags/${encodeURIComponent(tagName)}/content`, {
+      method: 'GET',
+      headers: this.getHeaders(),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to fetch tag content');
+    }
+
+    return response.json();
+  }
+
+  async getAllTags(): Promise<Array<{
+    name: string;
+    articleCount: number;
+    questionCount: number;
+    totalCount: number;
+    color: string;
+  }>> {
+    const response = await fetch(`${API_BASE_URL}/tags/all`, {
+      method: 'GET',
+      headers: this.getHeaders(),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to fetch tags');
+    }
+
+    return response.json();
+  }
 }
 
 export const authAPI = new AuthAPI();
