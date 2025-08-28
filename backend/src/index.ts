@@ -6,6 +6,8 @@ import { menteesRouter } from './routes/mentees';
 import { communitiesRouter } from './routes/communities';
 import { questionsRouter } from './routes/questions';
 import { articlesRouter } from './routes/articles';
+import rephraseRoute from './routes/rephrase';
+import summarizeRoute from "./routes/summarize";
 
 // Load environment variables
 dotenv.config();
@@ -27,6 +29,8 @@ app.use('/api/mentees', menteesRouter);
 app.use('/api/communities', communitiesRouter);
 app.use('/api/questions', questionsRouter);
 app.use('/api/articles', articlesRouter);
+app.use('/api/rephrase', rephraseRoute);
+app.use("/api/summarize", summarizeRoute);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
