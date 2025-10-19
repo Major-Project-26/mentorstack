@@ -11,6 +11,8 @@ import rephraseRoute from './routes/rephrase';
 import summarizeRoute from "./routes/summarize";
 import { mentorsRouter } from './routes/mentors';
 import tagsRoute from "./routes/rectags";
+import wordleRouter from "./routes/wordle";
+import wordsRouter from "./routes/words";
 
 // Load environment variables
 dotenv.config();
@@ -37,6 +39,8 @@ app.use('/api/rephrase', rephraseRoute);
 app.use("/api/summarize", summarizeRoute);
 app.use('/api/mentors', mentorsRouter);
 app.use("/api/rectags", tagsRoute);
+app.use("/api/wordle", wordleRouter);
+app.use("/api/words", wordsRouter);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
