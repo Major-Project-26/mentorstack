@@ -1,18 +1,27 @@
 [
     {
+        "id": 1,
         "questionId": 1,
+        "tagId": 1
+    },
+    {
+        "id": 2,
+        "questionId": 1,
+        "tagId": 2
+    },
+    {
+        "id": 3,
+        "questionId": 2,
         "tagId": 3
     },
     {
-        "questionId": 1,
-        "tagId": 14
+        "id": 4,
+        "questionId": 2,
+        "tagId": 4
     },
     {
-        "questionId": 2,
-        "tagId": 6
-    },
-    {
-        "questionId": 2,
-        "tagId": 7
+        "id": 5,
+        "questionId": 3,
+        "tagId": 1
     }
 ]

@@ -2,21 +2,21 @@
     {
         "id": 1,
         "articleId": 1,
-        "tagId": 3
+        "tagId": 1
     },
     {
         "id": 2,
         "articleId": 1,
-        "tagId": 16
+        "tagId": 2
     },
     {
         "id": 3,
         "articleId": 2,
-        "tagId": 17
+        "tagId": 5
     },
     {
         "id": 4,
-        "articleId": 2,
-        "tagId": 18
+        "articleId": 3,
+        "tagId": 1
     }
 ]
