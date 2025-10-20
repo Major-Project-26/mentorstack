@@ -11,6 +11,7 @@ import rephraseRoute from './routes/rephrase';
 import summarizeRoute from "./routes/summarize";
 import { mentorsRouter } from './routes/mentors';
 import tagsRoute from "./routes/rectags";
+import spellcheckerRoute from './routes/spellcheck-express';
 import http from 'http';
 // inlined discussions connection handler to avoid import/init order issues
 import { prisma } from '../lib/prisma';
@@ -52,7 +53,7 @@ app.use("/api/rectags", tagsRoute);
 app.use("/api/wordle", wordleRouter);
 app.use("/api/words", wordsRouter);
 app.use('/api/chat', chatRouter);
-
+app.use('/api/spellcheck', spellcheckerRoute);
 // Health check endpoint
 app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', message: 'MentorStack API is running' });

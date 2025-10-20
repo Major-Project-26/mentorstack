@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Layout from '../../components/Layout';
+import SpellingChecker from '../../components/SpellingChecker';
 import { authAPI } from '@/lib/auth-api';
 
 const QuestionForm = () => {
@@ -133,12 +134,11 @@ const QuestionForm = () => {
       
       console.log('Question submitted successfully:', result);
       
-      // Redirect to questions page to see the newly created question
-      router.push('/questions');
-    } catch (err: unknown) {
+      // Redirect to mentee home page after successful submission
+      router.push('/mentee-home');
+    } catch (err) {
       console.error('Failed to submit question:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Failed to submit question. Please try again.';
-      setError(errorMessage);
+      setError('Failed to submit question. Please try again.');
     } finally {
       setLoading(false);
     }
