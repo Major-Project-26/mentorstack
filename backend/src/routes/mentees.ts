@@ -112,6 +112,37 @@ router.get('/profile/me', authenticateToken, async (req: any, res: any) => {
       },
       include: {
         questions: {
+          include: {
+            tags: {
+              include: {
+                tag: true
+              }
+            }
+          },
+          orderBy: { createdAt: 'desc' }
+        },
+        communityPosts: {
+          include: {
+            community: {
+              select: {
+                name: true
+              }
+            }
+          },
+          orderBy: { createdAt: 'desc' }
+        },
+        answers: {
+          include: {
+            question: {
+              select: {
+                id: true,
+                title: true
+              }
+            }
+          },
+          orderBy: { createdAt: 'desc' }
+        },
+        articles: {
           orderBy: { createdAt: 'desc' }
         },
         menteeRequests: true
@@ -125,8 +156,51 @@ router.get('/profile/me', authenticateToken, async (req: any, res: any) => {
     // Calculate stats
     const stats = {
       questionsAsked: mentee.questions.length,
+      bookmarksCount: 0, // TODO: Add bookmarks when implemented
       mentorshipRequestsCount: mentee.menteeRequests.length
     };
+
+    // Transform questions to include tags as string array
+    const questionsWithTags = mentee.questions.map((question: any) => ({
+      id: question.id,
+      title: question.title,
+      body: question.body,
+      createdAt: question.createdAt,
+      tags: question.tags.map((qt: any) => qt.tag.name)
+    }));
+
+    // Transform community posts
+    const communityPosts = mentee.communityPosts.map((post: any) => ({
+      id: post.id,
+      title: post.title,
+      content: post.content,
+      communityId: post.communityId,
+      communityName: post.community.name,
+      createdAt: post.createdAt,
+      upvotes: post.upvotes,
+      downvotes: post.downvotes
+    }));
+
+    // Transform answered questions
+    const answeredQuestions = mentee.answers.map((answer: any) => ({
+      id: answer.id,
+      questionId: answer.questionId,
+      questionTitle: answer.question.title,
+      content: answer.body,
+      createdAt: answer.createdAt,
+      upvotes: answer.upvotes,
+      downvotes: answer.downvotes
+    }));
+
+    // Transform articles
+    const articles = mentee.articles.map((article: any) => ({
+      id: article.id,
+      title: article.title,
+      content: article.content,
+      createdAt: article.createdAt,
+      upvotes: article.upvotes,
+      downvotes: article.downvotes
+    }));
 
     res.json({
       id: mentee.id,
@@ -138,7 +212,10 @@ router.get('/profile/me', authenticateToken, async (req: any, res: any) => {
       department: mentee.department,
       reputation: mentee.reputation,
       joinedDate: mentee.createdAt,
-      questions: mentee.questions,
+      questions: questionsWithTags,
+      communityPosts: communityPosts,
+      answeredQuestions: answeredQuestions,
+      articles: articles,
       stats
     });
 

@@ -81,13 +81,11 @@ export default function MenteeHomePage() {
                 {tab}
               </button>
             ))}
-            {user?.role === 'mentee' && (
-              <Link href="/ask-question">
-                <button className="ml-auto bg-[var(--color-primary-dark)] text-[var(--color-neutral)] px-5 py-2 rounded-lg font-medium shadow-lg hover:bg-[var(--color-primary)] transition">
-                  Ask Question
-                </button>
-              </Link>
-            )}
+            <Link href="/ask-question">
+              <button className="ml-auto bg-[var(--color-primary-dark)] text-[var(--color-neutral)] px-5 py-2 rounded-lg font-medium shadow-lg hover:bg-[var(--color-primary)] transition">
+                Ask Question
+              </button>
+            </Link>
           </div>
 
           {/* Questions List */}

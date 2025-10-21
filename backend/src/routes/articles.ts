@@ -282,17 +282,12 @@ router.get('/:id', async (req: any, res: any) => {
   }
 });
 
-// Create a new article (mentors only)
+// Create a new article (all authenticated users can create)
 router.post('/', authenticateToken, upload.array('images', 5), async (req: any, res: any) => {
   try {
     const { title, content, tags } = req.body;
     const userId = req.user.userId;
     const userRole = req.user.role;
-
-    // Only mentors can create articles
-    if (userRole !== 'mentor') {
-      return res.status(403).json({ message: 'Only mentors can create articles' });
-    }
 
     if (!title || !content) {
       return res.status(400).json({ message: 'Title and content are required' });

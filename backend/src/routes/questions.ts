@@ -23,7 +23,7 @@ const authenticateToken = (req: any, res: any, next: any) => {
   });
 };
 
-// Get all questions (simplified)
+// Get all questions
 router.get('/', async (req: any, res: any) => {
   try {
     const questions = await prisma.question.findMany({
@@ -37,7 +37,16 @@ router.get('/', async (req: any, res: any) => {
             avatarUrl: true
           }
         },
-        answers: true
+        answers: true,
+        tags: {
+          include: {
+            tag: {
+              select: {
+                name: true
+              }
+            }
+          }
+        }
       },
       orderBy: {
         createdAt: 'desc'
@@ -48,7 +57,7 @@ router.get('/', async (req: any, res: any) => {
       id: question.id,
       title: question.title,
       description: question.body,
-      tags: [],
+      tags: question.tags.map((qt: any) => qt.tag.name),
       createdAt: question.createdAt,
       authorName: question.author.name,
       authorRole: question.author.role,
@@ -63,10 +72,24 @@ router.get('/', async (req: any, res: any) => {
   }
 });
 
-// Get question by ID (simplified)
+// Get question by ID
 router.get('/:id', async (req: any, res: any) => {
   try {
     const questionId = parseInt(req.params.id);
+    
+    // Check for optional auth token to include user vote
+    let currentUserId: number | null = null;
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+
+    if (token) {
+      try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret') as any;
+        currentUserId = decoded.userId;
+      } catch (err) {
+        // Ignore invalid token and continue without user vote
+      }
+    }
     
     const question = await prisma.question.findUnique({
       where: { id: questionId },
@@ -88,6 +111,19 @@ router.get('/:id', async (req: any, res: any) => {
                 role: true,
                 avatarUrl: true
               }
+            },
+            AnswerVote: true
+          },
+          orderBy: {
+            createdAt: 'desc'
+          }
+        },
+        tags: {
+          include: {
+            tag: {
+              select: {
+                name: true
+              }
             }
           }
         }
@@ -102,19 +138,34 @@ router.get('/:id', async (req: any, res: any) => {
       id: question.id,
       title: question.title,
       description: question.body,
-      tags: [],
+      tags: question.tags.map((qt: any) => qt.tag.name),
       createdAt: question.createdAt,
       authorName: question.author.name,
       authorRole: question.author.role,
       voteScore: 0,
-      answers: question.answers.map((answer: any) => ({
-        id: answer.id,
-        content: answer.body,
-        createdAt: answer.createdAt,
-        authorName: answer.author.name,
-        authorRole: answer.author.role,
-        voteScore: 0
-      }))
+      answers: question.answers.map((answer: any) => {
+        const upvotes = answer.AnswerVote.filter((v: any) => v.voteType === 'upvote').length;
+        const downvotes = answer.AnswerVote.filter((v: any) => v.voteType === 'downvote').length;
+        
+        // Determine current user's vote if available
+        let userVote: 'upvote' | 'downvote' | null = null;
+        if (currentUserId) {
+          const userVoteRecord = answer.AnswerVote.find((v: any) => v.voterId === currentUserId);
+          userVote = userVoteRecord ? (userVoteRecord.voteType as 'upvote' | 'downvote') : null;
+        }
+        
+        return {
+          id: answer.id,
+          content: answer.body,
+          createdAt: answer.createdAt,
+          authorName: answer.author.name,
+          authorRole: answer.author.role,
+          upvotes,
+          downvotes,
+          voteScore: upvotes - downvotes,
+          userVote
+        };
+      })
     };
 
     res.json(formattedQuestion);
@@ -124,12 +175,121 @@ router.get('/:id', async (req: any, res: any) => {
   }
 });
 
+// Create a new question
+router.post('/', authenticateToken, async (req: any, res: any) => {
+  try {
+    const { title, body, tags } = req.body;
+    const userId = req.user.userId;
+    const userRole = req.user.role;
+
+    console.log('📝 Creating question:', { title, body, tags, userId, userRole });
+
+    // Validation
+    if (!title || title.trim().length < 10) {
+      return res.status(400).json({ message: 'Title must be at least 10 characters long' });
+    }
+
+    if (!body || body.trim().length < 20) {
+      return res.status(400).json({ message: 'Question body must be at least 20 characters long' });
+    }
+
+    // Create the question
+    const question = await prisma.question.create({
+      data: {
+        title: title.trim(),
+        body: body.trim(),
+        authorId: userId,
+        authorRole: userRole as Role,
+      },
+      include: {
+        author: {
+          select: {
+            name: true,
+            role: true
+          }
+        }
+      }
+    });
+
+    // Handle tags if provided
+    if (tags && Array.isArray(tags) && tags.length > 0) {
+      for (const tagName of tags) {
+        if (typeof tagName === 'string' && tagName.trim()) {
+          const trimmedTagName = tagName.trim().toLowerCase();
+          
+          // Find or create the tag
+          let tag = await prisma.tag.findUnique({
+            where: { name: trimmedTagName }
+          });
+
+          if (!tag) {
+            tag = await prisma.tag.create({
+              data: { name: trimmedTagName }
+            });
+          }
+
+          // Create the question-tag relationship
+          await prisma.questionTag.create({
+            data: {
+              questionId: question.id,
+              tagId: tag.id
+            }
+          });
+        }
+      }
+    }
+
+    // Fetch the complete question with tags
+    const completeQuestion = await prisma.question.findUnique({
+      where: { id: question.id },
+      include: {
+        author: {
+          select: {
+            name: true
+          }
+        },
+        tags: {
+          include: {
+            tag: {
+              select: {
+                name: true
+              }
+            }
+          }
+        }
+      }
+    });
+
+    const response = {
+      message: 'Question created successfully',
+      question: {
+        id: completeQuestion!.id,
+        title: completeQuestion!.title,
+        description: completeQuestion!.body,
+        tags: completeQuestion!.tags.map(qt => qt.tag.name),
+        createdAt: completeQuestion!.createdAt,
+        authorName: completeQuestion!.author.name
+      }
+    };
+
+    res.status(201).json(response);
+
+  } catch (error) {
+    console.error('❌ Error creating question:', error);
+    res.status(500).json({ 
+      message: 'Server error', 
+      details: process.env.NODE_ENV === 'development' ? (error as any)?.message : undefined
+    });
+  }
+});
+
 // Create answer for a question
 router.post('/:questionId/answers', authenticateToken, async (req: any, res: any) => {
   try {
     const questionId = parseInt(req.params.questionId);
     const { content } = req.body;
-    const { id: userId, role } = req.user;
+    const userId = req.user.userId; // Fixed: use userId from token
+    const userRole = req.user.role;
 
     if (!content || content.trim().length === 0) {
       return res.status(400).json({ error: 'Answer content is required' });
@@ -148,27 +308,33 @@ router.post('/:questionId/answers', authenticateToken, async (req: any, res: any
       return res.status(404).json({ error: 'Question not found' });
     }
 
-    // Create the answer using raw SQL to bypass Prisma type issues
-    const result = await prisma.$executeRaw`
-      INSERT INTO "Answer" (body, "questionId", "authorId", "authorRole", "createdAt", "updatedAt")
-      VALUES (${content.trim()}, ${questionId}, ${userId}, ${role}::"Role", NOW(), NOW())
-      RETURNING id
-    `;
-
-    console.log('Answer created via raw SQL:', result);
-
-    // Get author name based on role
-    const author = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { name: true, role: true }
+    // Create the answer using Prisma
+    const answer = await prisma.answer.create({
+      data: {
+        body: content.trim(),
+        questionId,
+        authorId: userId,
+        authorRole: userRole as Role
+      },
+      include: {
+        author: {
+          select: {
+            name: true,
+            role: true,
+            avatarUrl: true
+          }
+        }
+      }
     });
 
     const responseAnswer = {
-      id: 'created',
-      content: content.trim(),
-      authorName: author?.name || 'Unknown',
-      authorRole: author?.role || role,
-      createdAt: new Date(),
+      id: answer.id,
+      content: answer.body,
+      authorName: answer.author.name,
+      authorRole: answer.author.role,
+      createdAt: answer.createdAt,
+      upvotes: 0,
+      downvotes: 0,
       voteScore: 0
     };
 
@@ -178,7 +344,81 @@ router.post('/:questionId/answers', authenticateToken, async (req: any, res: any
     });
   } catch (error: any) {
     console.error('Error creating answer:', error);
-    res.status(500).json({ error: 'Failed to create answer', details: error.message });
+    res.status(500).json({ 
+      message: 'Server error',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
+// Vote on an answer
+router.post('/:questionId/answers/:answerId/vote', authenticateToken, async (req: any, res: any) => {
+  try {
+    const questionId = parseInt(req.params.questionId);
+    const answerId = parseInt(req.params.answerId);
+    const { voteType } = req.body;
+    const userId = req.user.userId;
+
+    if (!['upvote', 'downvote'].includes(voteType)) {
+      return res.status(400).json({ message: 'Invalid vote type. Must be "upvote" or "downvote"' });
+    }
+
+    // Check if answer exists and belongs to the question
+    const answer = await prisma.answer.findFirst({
+      where: {
+        id: answerId,
+        questionId: questionId
+      }
+    });
+
+    if (!answer) {
+      return res.status(404).json({ message: 'Answer not found' });
+    }
+
+    // Check if user has already voted
+    const existingVote = await prisma.answerVote.findUnique({
+      where: {
+        voterId_answerId: {
+          voterId: userId,
+          answerId: answerId
+        }
+      }
+    });
+
+    if (existingVote) {
+      // If clicking the same vote type, remove the vote (toggle off)
+      if (existingVote.voteType === voteType) {
+        await prisma.answerVote.delete({
+          where: { id: existingVote.id }
+        });
+        return res.json({ message: 'Vote removed successfully' });
+      } else {
+        // Otherwise update the vote to the new type
+        await prisma.answerVote.update({
+          where: { id: existingVote.id },
+          data: { voteType: voteType as any }
+        });
+        return res.json({ message: 'Vote updated successfully' });
+      }
+    }
+
+    // Create new vote
+    await prisma.answerVote.create({
+      data: {
+        voterId: userId,
+        answerId: answerId,
+        voteType: voteType as any
+      }
+    });
+
+    res.json({ message: 'Vote recorded successfully' });
+
+  } catch (error: any) {
+    console.error('Error voting on answer:', error);
+    res.status(500).json({ 
+      message: 'Server error',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 });
 

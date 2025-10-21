@@ -42,7 +42,8 @@ const QuestionForm = () => {
     const checkAuth = async () => {
       try {
         const userData = await authAPI.getCurrentUser();
-        if (userData.user.role !== 'mentee') {
+        // Allow both mentors and mentees to ask questions
+        if (userData.user.role !== 'mentee' && userData.user.role !== 'mentor') {
           router.push('/home');
         }
       } catch (err) {

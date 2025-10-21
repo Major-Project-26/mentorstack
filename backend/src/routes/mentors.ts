@@ -153,6 +153,16 @@ router.get('/profile/me', authenticateToken, async (req: any, res: any) => {
         role: Role.mentor 
       },
       include: {
+        questions: {
+          include: {
+            tags: {
+              include: {
+                tag: true
+              }
+            }
+          },
+          orderBy: { createdAt: 'desc' }
+        },
         answers: {
           include: {
             question: {
@@ -204,6 +214,23 @@ router.get('/profile/me', authenticateToken, async (req: any, res: any) => {
       mentorshipRequests: mentor.mentorRequests.length
     };
 
+    // Transform questions to include tags as string array
+    const questionsWithTags = mentor.questions.map((question: any) => ({
+      id: question.id,
+      title: question.title,
+      body: question.body,
+      createdAt: question.createdAt,
+      tags: question.tags.map((qt: any) => qt.tag.name)
+    }));
+
+    // Transform answers to include content (body field from schema)
+    const answersWithContent = mentor.answers.map((answer: any) => ({
+      id: answer.id,
+      content: answer.body,
+      createdAt: answer.createdAt,
+      question: answer.question
+    }));
+
     res.json({
       id: mentor.id,
       name: mentor.name,
@@ -216,7 +243,8 @@ router.get('/profile/me', authenticateToken, async (req: any, res: any) => {
       department: mentor.department,
       reputation: mentor.reputation,
       joinedDate: mentor.createdAt,
-      answers: mentor.answers,
+      questions: questionsWithTags,
+      answers: answersWithContent,
       articles: mentor.articles,
       connections: mentor.mentorConnections,
       mentorshipRequests: mentor.mentorRequests,

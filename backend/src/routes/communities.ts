@@ -502,12 +502,29 @@ router.post('/:communityId/posts/:postId/vote', authenticateToken, async (req: a
       }
     });
 
+    const postIdNum = parseInt(postId);
+
     if (existingVote) {
       // If user clicks the same vote type, remove the vote
       if (existingVote.voteType === voteType) {
+        // Remove vote and update counters
         await prisma.communityPostVote.delete({
           where: { id: existingVote.id }
         });
+
+        // Decrement the appropriate counter
+        if (existingVote.voteType === 'upvote') {
+          await prisma.communityPost.update({
+            where: { id: postIdNum },
+            data: { upvotes: { decrement: 1 } }
+          });
+        } else {
+          await prisma.communityPost.update({
+            where: { id: postIdNum },
+            data: { downvotes: { decrement: 1 } }
+          });
+        }
+
         res.json({ message: 'Vote removed successfully' });
       } else {
         // Update existing vote to new type
@@ -515,6 +532,28 @@ router.post('/:communityId/posts/:postId/vote', authenticateToken, async (req: a
           where: { id: existingVote.id },
           data: { voteType: voteType as any }
         });
+
+        // Update counters: decrement old, increment new
+        if (existingVote.voteType === 'upvote') {
+          // Was upvote, now downvote
+          await prisma.communityPost.update({
+            where: { id: postIdNum },
+            data: { 
+              upvotes: { decrement: 1 },
+              downvotes: { increment: 1 }
+            }
+          });
+        } else {
+          // Was downvote, now upvote
+          await prisma.communityPost.update({
+            where: { id: postIdNum },
+            data: { 
+              downvotes: { decrement: 1 },
+              upvotes: { increment: 1 }
+            }
+          });
+        }
+
         res.json({ message: 'Vote updated successfully' });
       }
     } else {
@@ -522,10 +561,24 @@ router.post('/:communityId/posts/:postId/vote', authenticateToken, async (req: a
       await prisma.communityPostVote.create({
         data: {
           userId: userId,
-          postId: parseInt(postId),
+          postId: postIdNum,
           voteType: voteType as any
         }
       });
+
+      // Increment the appropriate counter
+      if (voteType === 'upvote') {
+        await prisma.communityPost.update({
+          where: { id: postIdNum },
+          data: { upvotes: { increment: 1 } }
+        });
+      } else {
+        await prisma.communityPost.update({
+          where: { id: postIdNum },
+          data: { downvotes: { increment: 1 } }
+        });
+      }
+
       res.json({ message: 'Vote recorded successfully' });
     }
   } catch (error) {

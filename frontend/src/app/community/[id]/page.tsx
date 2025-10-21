@@ -259,8 +259,7 @@ export default function CommunityDetailPage() {
                             </svg>
                           </button>
                           <span className="text-sm font-medium text-gray-700">
-                            {post.votes.filter(v => v.voteType === 'upvote').length - 
-                             post.votes.filter(v => v.voteType === 'downvote').length}
+                            {post.upvotes - post.downvotes}
                           </span>
                           <button
                             onClick={() => handleVote(post.id, 'downvote')}

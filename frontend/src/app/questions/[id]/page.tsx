@@ -35,6 +35,7 @@ export default function QuestionDetailPage() {
   const [showCodeEditor, setShowCodeEditor] = useState(false);
   const [codeContent, setCodeContent] = useState("");
   const [selectedLanguage, setSelectedLanguage] = useState("javascript");
+  const [userVotes, setUserVotes] = useState<{ [answerId: number]: 'upvote' | 'downvote' | null }>({});
   const editorRef = useRef<HTMLTextAreaElement>(null);
   const codeEditorRef = useRef<HTMLTextAreaElement>(null);
 
@@ -50,6 +51,13 @@ export default function QuestionDetailPage() {
       try {
         const questionData = await authAPI.getQuestion(questionId);
         setQuestion(questionData);
+        
+        // Track user votes for each answer
+        const votes: { [answerId: number]: 'upvote' | 'downvote' | null } = {};
+        questionData.answers?.forEach((answer) => {
+          votes[answer.id] = answer.userVote || null;
+        });
+        setUserVotes(votes);
       } catch (error) {
         console.error('Error loading question:', error);
         router.push('/questions');
@@ -446,6 +454,73 @@ export default function QuestionDetailPage() {
                   {question.answers.map((answer) => (
                     <div key={answer.id} className="bg-gray-50 p-6 rounded-lg">
                       <div className="flex items-start gap-4">
+                        {/* Vote Buttons */}
+                        <div className="flex flex-col items-center gap-2">
+                          <button
+                            onClick={async () => {
+                              try {
+                                const currentVote = userVotes[answer.id];
+                                await authAPI.voteOnAnswer(questionId, answer.id, 'upvote');
+                                
+                                // Update user votes state
+                                setUserVotes(prev => ({
+                                  ...prev,
+                                  [answer.id]: currentVote === 'upvote' ? null : 'upvote'
+                                }));
+                                
+                                // Reload question to update vote counts
+                                const questionData = await authAPI.getQuestion(questionId);
+                                setQuestion(questionData);
+                              } catch (error) {
+                                console.error('Error voting:', error);
+                              }
+                            }}
+                            className={`p-2 rounded-lg transition-colors ${
+                              userVotes[answer.id] === 'upvote'
+                                ? 'bg-green-200 text-green-700'
+                                : 'hover:bg-green-100 text-gray-500'
+                            }`}
+                            title="Upvote this answer"
+                          >
+                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                            </svg>
+                          </button>
+                          <span className="text-lg font-bold text-gray-700">
+                            {(answer.upvotes || 0) - (answer.downvotes || 0)}
+                          </span>
+                          <button
+                            onClick={async () => {
+                              try {
+                                const currentVote = userVotes[answer.id];
+                                await authAPI.voteOnAnswer(questionId, answer.id, 'downvote');
+                                
+                                // Update user votes state
+                                setUserVotes(prev => ({
+                                  ...prev,
+                                  [answer.id]: currentVote === 'downvote' ? null : 'downvote'
+                                }));
+                                
+                                // Reload question to update vote counts
+                                const questionData = await authAPI.getQuestion(questionId);
+                                setQuestion(questionData);
+                              } catch (error) {
+                                console.error('Error voting:', error);
+                              }
+                            }}
+                            className={`p-2 rounded-lg transition-colors ${
+                              userVotes[answer.id] === 'downvote'
+                                ? 'bg-red-200 text-red-700'
+                                : 'hover:bg-red-100 text-gray-500'
+                            }`}
+                            title="Downvote this answer"
+                          >
+                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                          </button>
+                        </div>
+
                         {/* Answer Content */}
                         <div className="flex-1">
                           <div className="mb-4">

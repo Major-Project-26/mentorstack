@@ -31,7 +31,7 @@ export default function ProfilePage() {
           // Get mentor profile
           const profileData = await authAPI.getMentorProfile();
           setMentorProfile(profileData);
-          setActiveTab("My Answers");
+          setActiveTab("My Questions");
         }
       } catch (error) {
         console.error('Error loading profile:', error);
@@ -59,7 +59,7 @@ export default function ProfilePage() {
           name: mentorProfile.name,
           bio: mentorProfile.bio,
           skills: mentorProfile.skills,
-          location: mentorProfile.location
+          location: mentorProfile.location || undefined
         });
       }
       setIsEditing(false);
@@ -167,23 +167,16 @@ export default function ProfilePage() {
                 
                 {/* Action Buttons */}
                 <div className="flex gap-3">
-                  {userRole === 'mentee' && (
-                    <Link href="/ask-question">
-                      <button className="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg font-medium hover:bg-slate-200 transition">
-                        Ask
-                      </button>
-                    </Link>
-                  )}
-                  {userRole === 'mentor' && (
-                    <Link href="/create-article">
-                      <button className="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg font-medium hover:bg-slate-200 transition">
-                        Write Article
-                      </button>
-                    </Link>
-                  )}
-                  <button className="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg font-medium hover:bg-slate-200 transition">
-                    Create a Blog
-                  </button>
+                  <Link href="/ask-question">
+                    <button className="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg font-medium hover:bg-slate-200 transition">
+                      Ask Question
+                    </button>
+                  </Link>
+                  <Link href="/create-article">
+                    <button className="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg font-medium hover:bg-slate-200 transition">
+                      Write Article
+                    </button>
+                  </Link>
                   <button 
                     onClick={() => setIsEditing(!isEditing)}
                     className="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg font-medium hover:bg-slate-200 transition"
@@ -209,7 +202,7 @@ export default function ProfilePage() {
             <div className="border-b border-slate-200 px-6">
               <div className="flex gap-8">
                 {userRole === 'mentee' ? (
-                  ["My Questions", "Posts", "Answered", "Bookmarked", "Mentees"].map((tab) => (
+                  ["My Questions", "Articles", "Posts", "Answered", "Bookmarked", "Mentees"].map((tab) => (
                     <button
                       key={tab}
                       onClick={() => setActiveTab(tab)}
@@ -223,7 +216,7 @@ export default function ProfilePage() {
                     </button>
                   ))
                 ) : (
-                  ["My Answers", "Articles", "Mentees", "Requests"].map((tab) => (
+                  ["My Questions", "My Answers", "Articles", "Mentees", "Requests"].map((tab) => (
                     <button
                       key={tab}
                       onClick={() => setActiveTab(tab)}
@@ -250,21 +243,27 @@ export default function ProfilePage() {
                       {menteeProfile.questions.length > 0 ? (
                         <div className="space-y-4">
                           {menteeProfile.questions.map((question) => (
-                            <div key={question.id} className="border border-slate-200 rounded-lg p-4 hover:bg-slate-50 transition">
-                              <h4 className="font-semibold text-slate-800 mb-2">{question.title}</h4>
+                            <div 
+                              key={question.id} 
+                              onClick={() => router.push(`/questions/${question.id}`)}
+                              className="border border-slate-200 rounded-lg p-4 hover:bg-slate-50 transition cursor-pointer"
+                            >
+                              <h4 className="font-semibold text-slate-800 mb-2 hover:text-emerald-600">{question.title}</h4>
                               {question.description && (
                                 <p className="text-slate-600 text-sm mb-3">{question.description}</p>
                               )}
-                              <div className="flex gap-2 mb-2">
-                                {question.tags.map((tag) => (
-                                  <span
-                                    key={tag}
-                                    className="px-2 py-1 text-xs bg-emerald-100 text-emerald-700 rounded-full"
-                                  >
-                                    {tag}
-                                  </span>
-                                ))}
-                              </div>
+                              {question.tags && question.tags.length > 0 && (
+                                <div className="flex gap-2 mb-2">
+                                  {question.tags.map((tag) => (
+                                    <span
+                                      key={tag}
+                                      className="px-2 py-1 text-xs bg-emerald-100 text-emerald-700 rounded-full"
+                                    >
+                                      {tag}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
                               <div className="text-xs text-slate-500">
                                 {new Date(question.createdAt).toLocaleDateString()}
                               </div>
@@ -288,7 +287,112 @@ export default function ProfilePage() {
                     </div>
                   )}
                   
-                  {activeTab !== "My Questions" && (
+                  {activeTab === "Posts" && (
+                    <div>
+                      {menteeProfile.communityPosts && menteeProfile.communityPosts.length > 0 ? (
+                        <div className="space-y-4">
+                          {menteeProfile.communityPosts.map((post) => (
+                            <div 
+                              key={post.id} 
+                              onClick={() => router.push(`/community/${post.communityId}/post/${post.id}`)}
+                              className="border border-slate-200 rounded-lg p-4 hover:bg-slate-50 transition cursor-pointer"
+                            >
+                              <h4 className="font-semibold text-slate-800 mb-2 hover:text-emerald-600">{post.title}</h4>
+                              <p className="text-slate-600 text-sm mb-3 line-clamp-3">{post.content}</p>
+                              <div className="flex items-center gap-4 text-xs text-slate-500">
+                                <span>in {post.communityName}</span>
+                                <span>•</span>
+                                <span>{post.upvotes - post.downvotes} votes</span>
+                                <span>•</span>
+                                <span>{new Date(post.createdAt).toLocaleDateString()}</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-12">
+                          <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <span className="text-2xl">💬</span>
+                          </div>
+                          <h3 className="text-xl font-semibold text-slate-700 mb-2">No community posts yet</h3>
+                          <p className="text-slate-500">Join a community and share your thoughts!</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {activeTab === "Articles" && (
+                    <div>
+                      {menteeProfile.articles && menteeProfile.articles.length > 0 ? (
+                        <div className="space-y-4">
+                          {menteeProfile.articles.map((article) => (
+                            <div 
+                              key={article.id} 
+                              onClick={() => router.push(`/articles/${article.id}`)}
+                              className="border border-slate-200 rounded-lg p-4 hover:bg-slate-50 transition cursor-pointer"
+                            >
+                              <h4 className="font-semibold text-slate-800 mb-2 hover:text-emerald-600">{article.title}</h4>
+                              <p className="text-slate-600 text-sm mb-3 line-clamp-3">{article.content}</p>
+                              <div className="flex items-center gap-4 text-xs text-slate-500">
+                                <span>{article.upvotes - article.downvotes} votes</span>
+                                <span>•</span>
+                                <span>Published on {new Date(article.createdAt).toLocaleDateString()}</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-12">
+                          <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <span className="text-2xl">📄</span>
+                          </div>
+                          <h3 className="text-xl font-semibold text-slate-700 mb-2">No articles yet</h3>
+                          <p className="text-slate-500 mb-6">Share your knowledge by writing your first article.</p>
+                          <Link href="/create-article">
+                            <button className="px-6 py-3 bg-emerald-500 text-white font-medium rounded-lg hover:bg-emerald-600 transition">
+                              Write Your First Article
+                            </button>
+                          </Link>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {activeTab === "Answered" && (
+                    <div>
+                      {menteeProfile.answeredQuestions && menteeProfile.answeredQuestions.length > 0 ? (
+                        <div className="space-y-4">
+                          {menteeProfile.answeredQuestions.map((answer) => (
+                            <div 
+                              key={answer.id} 
+                              onClick={() => router.push(`/questions/${answer.questionId}`)}
+                              className="border border-slate-200 rounded-lg p-4 hover:bg-slate-50 transition cursor-pointer"
+                            >
+                              <h4 className="font-semibold text-slate-800 mb-2 hover:text-emerald-600">
+                                Re: {answer.questionTitle}
+                              </h4>
+                              <p className="text-slate-600 text-sm mb-3 line-clamp-3">{answer.content}</p>
+                              <div className="flex items-center gap-4 text-xs text-slate-500">
+                                <span>{answer.upvotes - answer.downvotes} votes</span>
+                                <span>•</span>
+                                <span>Answered on {new Date(answer.createdAt).toLocaleDateString()}</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-12">
+                          <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <span className="text-2xl">💡</span>
+                          </div>
+                          <h3 className="text-xl font-semibold text-slate-700 mb-2">No answers yet</h3>
+                          <p className="text-slate-500">Start helping others by answering questions!</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {activeTab !== "My Questions" && activeTab !== "Articles" && activeTab !== "Posts" && activeTab !== "Answered" && (
                     <div className="text-center py-12">
                       <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
                         <span className="text-2xl">📝</span>
@@ -303,13 +407,66 @@ export default function ProfilePage() {
               {/* Mentor Tabs */}
               {userRole === 'mentor' && mentorProfile && (
                 <>
+                  {activeTab === "My Questions" && (
+                    <div>
+                      {mentorProfile.questions.length > 0 ? (
+                        <div className="space-y-4">
+                          {mentorProfile.questions.map((question) => (
+                            <div 
+                              key={question.id} 
+                              onClick={() => router.push(`/questions/${question.id}`)}
+                              className="border border-slate-200 rounded-lg p-4 hover:bg-slate-50 transition cursor-pointer"
+                            >
+                              <h4 className="font-semibold text-slate-800 mb-2 hover:text-emerald-600">{question.title}</h4>
+                              {question.description && (
+                                <p className="text-slate-600 text-sm mb-3">{question.description}</p>
+                              )}
+                              {question.tags && question.tags.length > 0 && (
+                                <div className="flex gap-2 mb-2">
+                                  {question.tags.map((tag) => (
+                                    <span
+                                      key={tag}
+                                      className="px-2 py-1 text-xs bg-emerald-100 text-emerald-700 rounded-full"
+                                    >
+                                      {tag}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                              <div className="text-xs text-slate-500">
+                                {new Date(question.createdAt).toLocaleDateString()}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-12">
+                          <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <span className="text-2xl">❓</span>
+                          </div>
+                          <h3 className="text-xl font-semibold text-slate-700 mb-2">No questions yet</h3>
+                          <p className="text-slate-500 mb-6">Ask your first question to get started.</p>
+                          <Link href="/ask-question">
+                            <button className="px-6 py-3 bg-emerald-500 text-white font-medium rounded-lg hover:bg-emerald-600 transition">
+                              Ask Your First Question
+                            </button>
+                          </Link>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   {activeTab === "My Answers" && (
                     <div>
                       {mentorProfile.answers.length > 0 ? (
                         <div className="space-y-4">
                           {mentorProfile.answers.map((answer) => (
-                            <div key={answer.id} className="border border-slate-200 rounded-lg p-4 hover:bg-slate-50 transition">
-                              <h4 className="font-semibold text-slate-800 mb-2">
+                            <div 
+                              key={answer.id} 
+                              onClick={() => router.push(`/questions/${answer.question.id}`)}
+                              className="border border-slate-200 rounded-lg p-4 hover:bg-slate-50 transition cursor-pointer"
+                            >
+                              <h4 className="font-semibold text-slate-800 mb-2 hover:text-emerald-600">
                                 Re: {answer.question.title}
                               </h4>
                               <p className="text-slate-600 text-sm mb-3 line-clamp-3">{answer.content}</p>
@@ -465,7 +622,7 @@ export default function ProfilePage() {
             
             {isEditing ? (
               <div className="space-y-2">
-                {(userRole === 'mentee' ? menteeProfile?.skills : mentorProfile?.skills)?.map((skill, index) => (
+                {((userRole === 'mentee' ? menteeProfile?.skills : mentorProfile?.skills) || []).map((skill, index) => (
                   <div key={index} className="flex items-center gap-2">
                     <input
                       type="text"
@@ -516,7 +673,7 @@ export default function ProfilePage() {
               </div>
             ) : (
               <div className="space-y-2">
-                {(userRole === 'mentee' ? menteeProfile?.skills : mentorProfile?.skills)?.map((skill, index) => (
+                {((userRole === 'mentee' ? menteeProfile?.skills : mentorProfile?.skills) || []).map((skill, index) => (
                   <div key={index} className="w-full h-6 bg-slate-200 rounded-full">
                     <div className="h-full bg-gradient-to-r from-emerald-400 to-emerald-500 rounded-full flex items-center px-3">
                       <span className="text-xs text-white font-medium">{skill}</span>

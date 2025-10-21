@@ -136,8 +136,7 @@ export default function PostPage() {
                 </button>
                 
                 <span className="text-xl font-bold text-gray-700 py-2">
-                  {post.votes.filter(v => v.voteType === 'upvote').length - 
-                   post.votes.filter(v => v.voteType === 'downvote').length}
+                  {post.upvotes - post.downvotes}
                 </span>
                 
                 <button

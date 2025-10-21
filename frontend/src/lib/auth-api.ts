@@ -42,6 +42,33 @@ export interface MenteeProfile {
   reputation: number;
   joinedDate: string;
   questions: Question[];
+  communityPosts: Array<{
+    id: number;
+    title: string;
+    content: string;
+    communityId: number;
+    communityName: string;
+    createdAt: string;
+    upvotes: number;
+    downvotes: number;
+  }>;
+  answeredQuestions: Array<{
+    id: number;
+    questionId: number;
+    questionTitle: string;
+    content: string;
+    createdAt: string;
+    upvotes: number;
+    downvotes: number;
+  }>;
+  articles: Array<{
+    id: number;
+    title: string;
+    content: string;
+    createdAt: string;
+    upvotes: number;
+    downvotes: number;
+  }>;
   stats: {
     questionsAsked: number;
     bookmarksCount: number;
@@ -61,6 +88,7 @@ export interface MentorProfile {
   department: string | null;
   reputation: number;
   joinedDate: string;
+  questions: Question[];
   answers: Array<{
     id: number;
     content: string;
@@ -79,6 +107,7 @@ export interface MentorProfile {
   }>;
   connections: Array<{
     id: number;
+    acceptedAt: string;
     mentee: {
       id: number;
       name: string;
@@ -88,6 +117,7 @@ export interface MentorProfile {
   mentorshipRequests: Array<{
     id: number;
     status: string;
+    requestMessage?: string;
     createdAt: string;
     mentee: {
       id: number;
@@ -132,7 +162,12 @@ export interface Answer {
   questionId: number;
   content: string;
   authorName: string;
+  authorRole: string;
   createdAt: string;
+  upvotes: number;
+  downvotes: number;
+  voteScore: number;
+  userVote?: 'upvote' | 'downvote' | null;
 }
 
 export interface Community {
@@ -165,6 +200,8 @@ export interface CommunityPost {
   title: string;
   content: string;
   imageUrls: string[];
+  upvotes: number;
+  downvotes: number;
   createdAt: string;
   updatedAt: string;
   votes: CommunityPostVote[];
@@ -456,20 +493,20 @@ class AuthAPI {
   // }
 
   // Note: Answer voting has been disabled in the UI
-  // async voteOnAnswer(questionId: number, answerId: number, voteType: 'upvote' | 'downvote'): Promise<{ message: string }> {
-  //   const response = await fetch(`${API_BASE_URL}/questions/${questionId}/answers/${answerId}/vote`, {
-  //     method: 'POST',
-  //     headers: this.getHeaders(true),
-  //     body: JSON.stringify({ voteType }),
-  //   });
+  async voteOnAnswer(questionId: number, answerId: number, voteType: 'upvote' | 'downvote'): Promise<{ message: string }> {
+    const response = await fetch(`${API_BASE_URL}/questions/${questionId}/answers/${answerId}/vote`, {
+      method: 'POST',
+      headers: this.getHeaders(true),
+      body: JSON.stringify({ voteType }),
+    });
 
-  //   if (!response.ok) {
-  //     const error = await response.json();
-  //     throw new Error(error.message || 'Failed to vote on answer');
-  //   }
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to vote on answer');
+    }
 
-  //   return response.json();
-  // }
+    return response.json();
+  }
 
   async submitAnswer(questionId: number, content: string): Promise<{ message: string; answer: Answer }> {
     const response = await fetch(`${API_BASE_URL}/questions/${questionId}/answers`, {
