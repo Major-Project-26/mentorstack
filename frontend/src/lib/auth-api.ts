@@ -942,15 +942,20 @@ class AuthAPI {
     stats: {
       totalArticles: number;
       totalQuestions: number;
+      totalCommunities: number;
       totalContent: number;
     };
     articles: Article[];
     questions: Question[];
-    relatedTags: Array<{
+    communities: Array<{
+      id: number;
       name: string;
-      articleCount: number;
-      questionCount: number;
-      totalCount: number;
+      description: string;
+      skills: string[];
+      creatorName: string;
+      memberCount: number;
+      postCount: number;
+      createdAt: string;
     }>;
   }> {
     const response = await fetch(`${API_BASE_URL}/tags/${encodeURIComponent(tagName)}/content`, {
@@ -970,6 +975,7 @@ class AuthAPI {
     name: string;
     articleCount: number;
     questionCount: number;
+    communityPostCount: number;
     totalCount: number;
     color: string;
   }>> {

@@ -174,35 +174,13 @@ router.get('/tags/popular', async (req: any, res: any) => {
       'bg-teal-100', 'bg-orange-100'
     ];
 
-    const popularTags = tagsWithCounts.map((tag, index) => ({
-      name: tag.name,
-      count: tag._count.articles,
-      color: colors[index % colors.length]
-    }));
-
-    // If we don't have enough tags, add some default ones
-    if (popularTags.length < 10) {
-      const defaultTags = [
-        { name: 'Web Development', count: 45, color: 'bg-blue-100' },
-        { name: 'AI', count: 32, color: 'bg-purple-100' },
-        { name: 'Cybersecurity', count: 28, color: 'bg-green-100' },
-        { name: 'IoT', count: 25, color: 'bg-yellow-100' },
-        { name: 'Frontend', count: 22, color: 'bg-pink-100' },
-        { name: 'Backend', count: 20, color: 'bg-indigo-100' },
-        { name: 'NLP', count: 18, color: 'bg-gray-100' },
-        { name: 'Machine Learning', count: 15, color: 'bg-red-100' },
-        { name: 'DevOps', count: 12, color: 'bg-teal-100' },
-        { name: 'Mobile Development', count: 10, color: 'bg-orange-100' }
-      ];
-
-      // Add default tags that aren't already in our database
-      const existingTagNames = popularTags.map(t => t.name.toLowerCase());
-      const missingTags = defaultTags.filter(t => 
-        !existingTagNames.includes(t.name.toLowerCase())
-      );
-
-      popularTags.push(...missingTags.slice(0, 10 - popularTags.length));
-    }
+    const popularTags = tagsWithCounts
+      .filter(tag => tag._count.articles > 0) // Only tags with articles
+      .map((tag, index) => ({
+        name: tag.name,
+        count: tag._count.articles,
+        color: colors[index % colors.length]
+      }));
 
     res.json(popularTags);
   } catch (error) {

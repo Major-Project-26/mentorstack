@@ -108,7 +108,7 @@ export default function CommunityDetailPage() {
 
       await authAPI.createCommunityPost(communityId, newPost);
       setShowCreatePost(false);
-      setNewPost({ title: "", content: "" });
+      setNewPost({ title: "", content: "", tags: [] });
       // Reload posts
       const updatedPosts = await authAPI.getCommunityPosts(communityId);
       setPosts(updatedPosts);
@@ -362,6 +362,59 @@ export default function CommunityDetailPage() {
                     rows={6}
                     placeholder="Write your post content here..."
                   />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Tags (Optional)</label>
+                  <div className="flex gap-2 mb-2">
+                    <input
+                      type="text"
+                      value={newTag}
+                      onChange={(e) => setNewTag(e.target.value)}
+                      onKeyPress={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          if (newTag.trim() && !newPost.tags.includes(newTag.trim())) {
+                            setNewPost({...newPost, tags: [...newPost.tags, newTag.trim()]});
+                            setNewTag("");
+                          }
+                        }
+                      }}
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                      placeholder="Add a tag and press Enter"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (newTag.trim() && !newPost.tags.includes(newTag.trim())) {
+                          setNewPost({...newPost, tags: [...newPost.tags, newTag.trim()]});
+                          setNewTag("");
+                        }
+                      }}
+                      className="px-4 py-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600"
+                    >
+                      Add
+                    </button>
+                  </div>
+                  {newPost.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {newPost.tags.map((tag, index) => (
+                        <span
+                          key={index}
+                          className="inline-flex items-center gap-1 px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-sm"
+                        >
+                          {tag}
+                          <button
+                            type="button"
+                            onClick={() => setNewPost({...newPost, tags: newPost.tags.filter((_, i) => i !== index)})}
+                            className="hover:text-emerald-900"
+                          >
+                            ×
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
 

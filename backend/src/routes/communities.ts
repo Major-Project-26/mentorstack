@@ -345,7 +345,7 @@ router.delete('/:id/leave', authenticateToken, async (req: any, res: any) => {
 router.post('/:id/posts', authenticateToken, async (req: any, res: any) => {
   try {
     const { id } = req.params;
-    const { title, content, imageUrls } = req.body;
+    const { title, content, imageUrls, tags } = req.body;
     const { userId, role } = req.user;
 
     if (!title || !content) {
@@ -375,6 +375,34 @@ router.post('/:id/posts', authenticateToken, async (req: any, res: any) => {
         imageUrls: imageUrls || []
       }
     });
+
+    // Handle tags if provided
+    if (tags && Array.isArray(tags) && tags.length > 0) {
+      for (const tagName of tags) {
+        if (typeof tagName === 'string' && tagName.trim()) {
+          const trimmedTagName = tagName.trim().toLowerCase();
+          
+          // Find or create the tag
+          let tag = await prisma.tag.findUnique({
+            where: { name: trimmedTagName }
+          });
+
+          if (!tag) {
+            tag = await prisma.tag.create({
+              data: { name: trimmedTagName }
+            });
+          }
+
+          // Link the tag to the community post
+          await prisma.communityPostTag.create({
+            data: {
+              postId: post.id,
+              tagId: tag.id
+            }
+          });
+        }
+      }
+    }
 
     res.status(201).json(post);
   } catch (error) {
