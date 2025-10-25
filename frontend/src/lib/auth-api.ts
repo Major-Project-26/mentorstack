@@ -362,7 +362,12 @@ class AuthAPI {
   }
 
   getToken(): string | null {
-    return localStorage.getItem('authToken');
+    if (typeof window === 'undefined') return null;
+    try {
+      return localStorage.getItem('authToken');
+    } catch {
+      return null;
+    }
   }
 
   isAuthenticated(): boolean {

@@ -26,8 +26,10 @@ import jwt from 'jsonwebtoken';
 import { getRabbitChannel, createEphemeralConsumer, publish } from './realtime/rabbit';
 import { WS_PATHS, ROUTING_KEYS, EXCHANGES } from './realtime/constants';
 import { ensureAiTopology } from './realtime/ai-topology';
+import { ensureChatTopology } from './realtime/chat-topology';
 import wordleRouter from "./routes/wordle";
 import wordsRouter from "./routes/words";
+import aiRouter from './routes/ai';
 
 // Load environment variables
 dotenv.config();
@@ -61,6 +63,7 @@ app.use("/api/words", wordsRouter);
 app.use('/api/chat', chatRouter);
 app.use('/api/spellcheck', spellcheckerRoute);
 app.use('/api/similar-questions', similarQuestionsRoute);
+app.use('/api/ai', aiRouter);
 // Health check endpoint
 app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', message: 'MentorStack API is running' });
@@ -90,6 +93,7 @@ const server = http.createServer(app);
 // Create WebSocket servers without attaching them to the HTTP server directly.
 const discussionsWss = new WebSocketServer({ noServer: true });
 const mainWss = new WebSocketServer({ noServer: true });
+const chatWss = new WebSocketServer({ noServer: true });
 
 // Helper: auth from query
 function authenticateFromQuery(reqUrl: string | undefined) {
@@ -210,6 +214,106 @@ mainWss.on('connection', async (ws: WebSocket, req) => {
   }
 });
 
+// Mentor-Mentee direct chat WS: /ws/chat?token=...&connectionId=123
+chatWss.on('connection', async (ws: WebSocket, req: IncomingMessage) => {
+  try {
+    const parsed = url.parse(req.url || '', true);
+    const token = (parsed.query.token as string) || '';
+    const connectionId = Number(parsed.query.connectionId);
+    if (!token || !connectionId || Number.isNaN(connectionId)) {
+      ws.close(1008, 'Unauthorized or invalid connection');
+      return;
+    }
+
+    const auth = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret') as any;
+    const userId = auth.userId as number;
+    if (!userId) { ws.close(1008, 'Unauthorized'); return; }
+
+    // Validate membership in the connection (either mentor or mentee)
+    const conn = await prisma.connection.findUnique({ where: { id: connectionId },
+      select: { id: true, mentorUserId: true, menteeUserId: true, conversation: { select: { id: true } } }
+    });
+    if (!conn || (conn.mentorUserId !== userId && conn.menteeUserId !== userId)) {
+      ws.close(1008, 'Not part of this connection');
+      return;
+    }
+
+    // Ensure conversation exists for this connection
+    let conversationId = conn.conversation?.id;
+    if (!conversationId) {
+      const created = await prisma.conversation.create({ data: { connectionId } });
+      conversationId = created.id;
+    }
+
+    // Bind ephemeral consumer for this connection
+    const bindingKey = ROUTING_KEYS.chatConnection(connectionId);
+    const ch = await getRabbitChannel();
+    const q = await ch.assertQueue('', { exclusive: true, durable: false, autoDelete: true });
+    await ch.bindQueue(q.queue, EXCHANGES.chats, bindingKey);
+    const consumerTag = (await ch.consume(q.queue, (msg: any) => {
+      if (!msg) return;
+      try {
+        const content = JSON.parse(msg.content.toString());
+        if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(content));
+      } catch (e) {
+        console.error('Failed to parse chat message', e);
+      } finally {
+        ch.ack(msg);
+      }
+    })).consumerTag;
+
+    ws.on('message', async (raw: RawData) => {
+      try {
+        const text = raw.toString();
+        const payload = JSON.parse(text);
+        const content = String(payload?.content || '').slice(0, 4000);
+        if (!content) return;
+
+        // Persist message
+        const message = await prisma.message.create({
+          data: {
+            conversationId: Number(conversationId),
+            senderId: userId,
+            message: content,
+          },
+          select: { id: true, timestamp: true }
+        });
+
+        // Publish to RabbitMQ so the other peer(s) subscribed to this connection receive it
+        await publish({
+          exchange: EXCHANGES.chats,
+          routingKey: bindingKey,
+          message: {
+            type: 'chat.message',
+            connectionId,
+            conversationId,
+            messageId: message.id,
+            senderId: userId,
+            content,
+            timestamp: message.timestamp,
+          }
+        });
+      } catch (e) {
+        console.error('Failed to process outbound chat message', e);
+      }
+    });
+
+    ws.on('close', async () => {
+      try { await ch.cancel(consumerTag); } catch {}
+      try { await ch.unbindQueue(q.queue, EXCHANGES.chats, bindingKey); } catch {}
+      try { await ch.deleteQueue(q.queue); } catch {}
+    });
+
+    // Initial handshake
+    if (ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({ type: 'system', message: 'joined', connectionId, conversationId }));
+    }
+  } catch (err) {
+    console.error('/ws/chat error', err);
+    try { ws.close(1011, 'Internal error'); } catch {}
+  }
+});
+
 // Centralized upgrade handler
 server.on('upgrade', (request, socket, head) => {
   const pathname = url.parse(request.url || '').pathname;
@@ -221,6 +325,10 @@ server.on('upgrade', (request, socket, head) => {
   } else if (pathname === '/ws') {
     mainWss.handleUpgrade(request, socket, head, (ws: WebSocket) => {
       mainWss.emit('connection', ws, request);
+    });
+  } else if (pathname === WS_PATHS.chat) {
+    chatWss.handleUpgrade(request, socket, head, (ws: WebSocket) => {
+      chatWss.emit('connection', ws, request);
     });
   } else {
     socket.destroy();
@@ -236,6 +344,8 @@ server.listen(Number(PORT), '0.0.0.0', async () => {
   try {
     await ensureAiTopology();
     console.log('🧠 AI topology ensured (direct exchange + user-questions-queue)');
+    await ensureChatTopology();
+    console.log('💬 Chat topology ensured (chats topic exchange)');
   } catch (e) {
     console.error('Failed to ensure AI topology', e);
   }
