@@ -117,6 +117,7 @@ router.get('/', async (req: any, res: any) => {
         title: article.title,
         content: article.content,
         imageUrls: article.imageUrls,
+        authorId: article.authorId,
         authorName: article.author.name,
         authorBio: article.author.bio,
         authorAvatar: article.author.avatarUrl,
@@ -220,7 +221,12 @@ router.get('/:id', async (req: any, res: any) => {
             avatarUrl: true
           }
         },
-        votes: true
+        votes: true,
+        tags: {
+          include: {
+            tag: true
+          }
+        }
       }
     });
 
@@ -243,12 +249,14 @@ router.get('/:id', async (req: any, res: any) => {
       title: article.title,
       content: article.content,
       imageUrls: article.imageUrls,
+      authorId: article.authorId,
       authorName: article.author.name,
       authorBio: article.author.bio,
       authorAvatar: article.author.avatarUrl,
       upvotes,
       downvotes,
       userVote,
+      tags: article.tags.map(at => at.tag.name),
       createdAt: article.createdAt,
       updatedAt: article.updatedAt
     };
@@ -422,6 +430,201 @@ router.post('/:id/vote', authenticateToken, async (req: any, res: any) => {
   } catch (error) {
     console.error('Error voting on article:', error);
     res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Update an article (only by author)
+router.put('/:id', authenticateToken, upload.array('images', 5), async (req: any, res: any) => {
+  try {
+    const articleId = parseInt(req.params.id);
+    const { title, content, tags, existingImageUrls } = req.body;
+    const userId = req.user.userId;
+
+    // Validation - relaxed for editing
+    if (!title || title.trim().length < 1) {
+      return res.status(400).json({ message: 'Title is required' });
+    }
+
+    if (!content || content.trim().length < 1) {
+      return res.status(400).json({ message: 'Content is required' });
+    }
+
+    // Check if article exists and user is the author
+    const article = await prisma.article.findUnique({
+      where: { id: articleId }
+    });
+
+    if (!article) {
+      return res.status(404).json({ message: 'Article not found' });
+    }
+
+    if (article.authorId !== userId) {
+      return res.status(403).json({ message: 'You can only edit your own articles' });
+    }
+
+    // Handle image URLs
+    let imageUrls: string[] = [];
+    
+    // Parse existing image URLs if provided
+    if (existingImageUrls) {
+      try {
+        imageUrls = typeof existingImageUrls === 'string' 
+          ? JSON.parse(existingImageUrls) 
+          : existingImageUrls;
+      } catch (error) {
+        console.error('Error parsing existing image URLs:', error);
+        imageUrls = [];
+      }
+    }
+
+    // Add newly uploaded images
+    if (req.files && Array.isArray(req.files)) {
+      for (const file of req.files) {
+        const imageUrl = `/uploads/articles/${file.filename}`;
+        imageUrls.push(imageUrl);
+      }
+    }
+
+    // Update the article
+    const updatedArticle = await prisma.article.update({
+      where: { id: articleId },
+      data: {
+        title: title.trim(),
+        content: content.trim(),
+        imageUrls: imageUrls
+      },
+      include: {
+        author: {
+          select: {
+            name: true,
+            bio: true,
+            avatarUrl: true
+          }
+        }
+      }
+    });
+
+    // Update tags if provided
+    if (tags) {
+      let parsedTags: string[] = [];
+      try {
+        parsedTags = typeof tags === 'string' ? JSON.parse(tags) : tags;
+      } catch (error) {
+        console.error('Error parsing tags:', error);
+        parsedTags = [];
+      }
+
+      if (parsedTags.length > 0) {
+        // Remove existing tags
+        await prisma.articleTag.deleteMany({
+          where: { articleId }
+        });
+
+        // Add new tags
+        for (const tagName of parsedTags) {
+          try {
+            let tag = await prisma.tag.findUnique({
+              where: { name: tagName.toLowerCase().trim() }
+            });
+
+            if (!tag) {
+              tag = await prisma.tag.create({
+                data: { name: tagName.toLowerCase().trim() }
+              });
+            }
+
+            await prisma.articleTag.create({
+              data: {
+                articleId: articleId,
+                tagId: tag.id
+              }
+            });
+          } catch (error) {
+            console.error(`Error creating/linking tag ${tagName}:`, error);
+          }
+        }
+      }
+    }
+
+    // Fetch complete article with tags
+    const completeArticle = await prisma.article.findUnique({
+      where: { id: articleId },
+      include: {
+        author: {
+          select: {
+            name: true,
+            bio: true,
+            avatarUrl: true
+          }
+        },
+        tags: {
+          include: {
+            tag: {
+              select: {
+                name: true
+              }
+            }
+          }
+        }
+      }
+    });
+
+    res.json({
+      message: 'Article updated successfully',
+      article: {
+        id: completeArticle!.id,
+        title: completeArticle!.title,
+        content: completeArticle!.content,
+        imageUrls: completeArticle!.imageUrls,
+        authorName: completeArticle!.author.name,
+        authorBio: completeArticle!.author.bio,
+        authorAvatar: completeArticle!.author.avatarUrl,
+        tags: completeArticle!.tags.map(at => at.tag.name),
+        updatedAt: completeArticle!.updatedAt
+      }
+    });
+
+  } catch (error) {
+    console.error('Error updating article:', error);
+    res.status(500).json({ 
+      message: 'Server error',
+      details: process.env.NODE_ENV === 'development' ? (error as any)?.message : undefined
+    });
+  }
+});
+
+// Delete an article (only by author)
+router.delete('/:id', authenticateToken, async (req: any, res: any) => {
+  try {
+    const articleId = parseInt(req.params.id);
+    const userId = req.user.userId;
+
+    // Check if article exists and user is the author
+    const article = await prisma.article.findUnique({
+      where: { id: articleId }
+    });
+
+    if (!article) {
+      return res.status(404).json({ message: 'Article not found' });
+    }
+
+    if (article.authorId !== userId) {
+      return res.status(403).json({ message: 'You can only delete your own articles' });
+    }
+
+    // Delete the article (cascade will handle related records)
+    await prisma.article.delete({
+      where: { id: articleId }
+    });
+
+    res.json({ message: 'Article deleted successfully' });
+
+  } catch (error) {
+    console.error('Error deleting article:', error);
+    res.status(500).json({ 
+      message: 'Server error',
+      details: process.env.NODE_ENV === 'development' ? (error as any)?.message : undefined
+    });
   }
 });
 

@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Layout from '@/components/Layout';
 import BookmarkButton from '@/components/BookmarkButton';
 import { authAPI, CommunityPost, Community } from '@/lib/auth-api';
+import { Edit, Trash2, Save, XCircle } from 'lucide-react';
 
 export default function PostPage() {
   const params = useParams();
@@ -16,6 +17,13 @@ export default function PostPage() {
   const [community, setCommunity] = useState<Community | null>(null);
   const [loading, setLoading] = useState(true);
   const [isMember, setIsMember] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<number | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editTitle, setEditTitle] = useState("");
+  const [editContent, setEditContent] = useState("");
+  const [editTags, setEditTags] = useState<string[]>([]);
+  const [tagInput, setTagInput] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     const loadData = async () => {
@@ -38,6 +46,14 @@ export default function PostPage() {
           // Post not found, redirect back
           router.push(`/community/${communityId}`);
           return;
+        }
+        
+        // Get current user ID
+        try {
+          const userResponse = await authAPI.getCurrentUser();
+          setCurrentUserId(userResponse.user.id);
+        } catch (error) {
+          console.error('Error getting current user:', error);
         }
         
         // Check if user is a member
@@ -73,6 +89,69 @@ export default function PostPage() {
       const errorMessage = error instanceof Error ? error.message : 'Failed to vote';
       alert(errorMessage);
     }
+  };
+
+  const handleEditPost = () => {
+    if (!post) return;
+    setEditTitle(post.title);
+    setEditContent(post.content);
+    setEditTags(post.tags || []);
+    setIsEditing(true);
+  };
+
+  const handleSavePost = async () => {
+    if (!post || !editTitle.trim() || !editContent.trim()) return;
+
+    setIsSubmitting(true);
+    try {
+      await authAPI.updateCommunityPost(parseInt(communityId), post.id, {
+        title: editTitle.trim(),
+        content: editContent.trim(),
+        tags: editTags
+      });
+      
+      // Reload post data
+      const updatedPosts = await authAPI.getCommunityPosts(parseInt(communityId));
+      const updatedPost = updatedPosts.find(p => p.id === post.id);
+      if (updatedPost) {
+        setPost(updatedPost);
+      }
+      setIsEditing(false);
+    } catch (error) {
+      console.error('Error updating post:', error);
+      alert('Failed to update post. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDeletePost = async () => {
+    if (!post) return;
+    
+    if (!confirm('Are you sure you want to delete this post? This action cannot be undone.')) {
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      await authAPI.deleteCommunityPost(parseInt(communityId), post.id);
+      router.push(`/community/${communityId}`);
+    } catch (error) {
+      console.error('Error deleting post:', error);
+      alert('Failed to delete post. Please try again.');
+      setIsSubmitting(false);
+    }
+  };
+
+  const addTag = () => {
+    if (tagInput.trim() && !editTags.includes(tagInput.trim())) {
+      setEditTags([...editTags, tagInput.trim()]);
+      setTagInput("");
+    }
+  };
+
+  const removeTag = (tagToRemove: string) => {
+    setEditTags(editTags.filter(t => t !== tagToRemove));
   };
 
   const goBackToCommunity = () => {
@@ -158,40 +237,146 @@ export default function PostPage() {
 
               {/* Post Content */}
               <div className="flex-1">
-                {/* Post Header */}
-                <div className="mb-6">
-                  <h1 className="text-3xl font-bold text-gray-900 mb-3">{post.title}</h1>
-                  <div className="flex items-center gap-4 text-sm text-gray-500">
-                    <span>Posted by {post.userName || `User${post.userId}`}</span>
-                    <span>•</span>
-                    <span>{new Date(post.createdAt).toLocaleDateString()}</span>
-                    <span>•</span>
-                    <span>in {community.name}</span>
+                {isEditing ? (
+                  /* Edit Mode */
+                  <div className="space-y-4">
+                    <h2 className="text-2xl font-bold text-gray-900 mb-4">Edit Post</h2>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                      <input
+                        type="text"
+                        value={editTitle}
+                        onChange={(e) => setEditTitle(e.target.value)}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Content</label>
+                      <textarea
+                        value={editContent}
+                        onChange={(e) => setEditContent(e.target.value)}
+                        rows={10}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Tags</label>
+                      <div className="flex gap-2 mb-2">
+                        <input
+                          type="text"
+                          value={tagInput}
+                          onChange={(e) => setTagInput(e.target.value)}
+                          onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
+                          placeholder="Add a tag..."
+                          className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                        />
+                        <button
+                          type="button"
+                          onClick={addTag}
+                          className="px-4 py-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600"
+                        >
+                          Add
+                        </button>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {editTags.map((tag) => (
+                          <span
+                            key={tag}
+                            className="px-3 py-1 text-sm bg-emerald-100 text-emerald-700 rounded-full flex items-center gap-1"
+                          >
+                            {tag}
+                            <button
+                              onClick={() => removeTag(tag)}
+                              className="text-emerald-600 hover:text-emerald-800"
+                            >
+                              ×
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                    
+                    <div className="flex gap-3 pt-4">
+                      <button
+                        onClick={handleSavePost}
+                        disabled={isSubmitting || !editTitle.trim() || !editContent.trim()}
+                        className="flex items-center gap-2 px-4 py-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <Save className="w-4 h-4" />
+                        Save Changes
+                      </button>
+                      <button
+                        onClick={() => setIsEditing(false)}
+                        disabled={isSubmitting}
+                        className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+                      >
+                        <XCircle className="w-4 h-4" />
+                        Cancel
+                      </button>
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  /* View Mode */
+                  <>
+                    {/* Post Header */}
+                    <div className="mb-6">
+                      <div className="flex items-start justify-between mb-3">
+                        <h1 className="text-3xl font-bold text-gray-900">{post.title}</h1>
+                        {currentUserId === (post.authorId || post.userId) && (
+                          <div className="flex gap-2">
+                            <button
+                              onClick={handleEditPost}
+                              className="flex items-center gap-1 px-3 py-1.5 text-sm text-emerald-600 border border-emerald-200 rounded-lg hover:bg-emerald-50"
+                            >
+                              <Edit className="w-4 h-4" />
+                              Edit
+                            </button>
+                            <button
+                              onClick={handleDeletePost}
+                              className="flex items-center gap-1 px-3 py-1.5 text-sm text-red-600 border border-red-200 rounded-lg hover:bg-red-50"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                              Delete
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-4 text-sm text-gray-500">
+                        <span>Posted by {post.userName || `User${post.userId}`}</span>
+                        <span>•</span>
+                        <span>{new Date(post.createdAt).toLocaleDateString()}</span>
+                        <span>•</span>
+                        <span>in {community.name}</span>
+                      </div>
+                      {post.tags && post.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-2 mt-3">
+                          {post.tags.map((tag) => (
+                            <span
+                              key={tag}
+                              className="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded-full"
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
 
-                {/* Post Body */}
-                <div className="prose prose-gray max-w-none">
-                  <div className="text-gray-700 leading-relaxed whitespace-pre-wrap text-lg">
-                    {post.content}
-                  </div>
-                </div>
+                    {/* Post Body */}
+                    <div className="prose prose-gray max-w-none">
+                      <div className="text-gray-700 leading-relaxed whitespace-pre-wrap text-lg">
+                        {post.content}
+                      </div>
+                    </div>
+                  </>
+                )}
 
                 {/* Post Actions */}
                 <div className="mt-8 pt-6 border-t border-gray-200">
                   <div className="flex items-center gap-6 text-sm text-gray-500">
-                    <div className="flex items-center gap-2">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                      </svg>
-                      <span>Comments (Coming Soon)</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
-                      </svg>
-                      <span>Share</span>
-                    </div>
                     <BookmarkButton kind="post" id={post.id} />
                   </div>
                 </div>

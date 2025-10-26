@@ -3,7 +3,6 @@ import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { authAPI } from "../../lib/auth-api";
-import SpellingChecker from "../../components/SpellingChecker";
 import {
     Code as CodeIcon,
     Link as LinkIcon,
@@ -23,7 +22,6 @@ import {
 export default function CreateArticle() {
     const router = useRouter();
     const [title, setTitle] = useState("");
-    const [description, setDescription] = useState("");
     const [content, setContent] = useState("");
     const [selectedTags, setSelectedTags] = useState<string[]>([
         "javascript",
@@ -344,7 +342,7 @@ export default function CreateArticle() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        if (!title.trim() || !description.trim() || !content.trim()) {
+        if (!title.trim() || !content.trim()) {
             setError("Please fill in all required fields");
             return;
         }
@@ -360,7 +358,6 @@ export default function CreateArticle() {
 
             const formData = new FormData();
             formData.append("title", title);
-            formData.append("description", description);
             formData.append("content", content);
             formData.append("tags", JSON.stringify(selectedTags));
 
@@ -381,7 +378,6 @@ export default function CreateArticle() {
     const handleSaveDraft = () => {
         const draft = {
             title,
-            description,
             content,
             selectedTags,
             timestamp: new Date().toISOString(),
@@ -391,11 +387,10 @@ export default function CreateArticle() {
 
     useEffect(() => {
         const interval = setInterval(() => {
-            if ((title || description || content) && !loading) {
+            if ((title || content) && !loading) {
                 setIsAutoSaving(true);
                 const draft = {
                     title,
-                    description,
                     content,
                     selectedTags,
                     timestamp: new Date().toISOString(),
@@ -405,7 +400,7 @@ export default function CreateArticle() {
         }, 30000);
 
         return () => clearInterval(interval);
-    }, [title, description, content, selectedTags, loading]);
+    }, [title, content, selectedTags, loading]);
 
     useEffect(() => {
         if (!isDraftLoaded) {
@@ -531,27 +526,6 @@ export default function CreateArticle() {
                                         placeholder="e.g. Complete Guide to React State Management"
                                         required
                                     />
-                                </div>
-                                <div className="space-y-3">
-                                    <label
-                                        htmlFor="description"
-                                        className="block text-lg font-semibold text-[#172A3A] mb-2"
-                                    >
-                                        Description <span className="text-red-500">*</span>
-                                    </label>
-                                    <p className="text-sm text-[#0e1921] mb-3">
-                                        Provide a brief summary of your article (150-300 characters)
-                                    </p>
-                                    <SpellingChecker
-                                        value={description}
-                                        onChange={setDescription}
-                                        placeholder="Describe what your article covers and what readers will learn..."
-                                        rows={4}
-                                        className="w-full px-4 py-3 bg-[#e6fcf1] border border-[#a8e4c9] rounded-lg text-[#172A3A] placeholder-[#3d4e5c] resize-vertical transition-all"
-                                    />
-                                    <div className="text-xs text-[#3d4e5c] mt-1">
-                                        {description.length}/300 characters
-                                    </div>
                                 </div>
                                 <div className="space-y-3">
                                     <label
@@ -1038,7 +1012,6 @@ export default function CreateArticle() {
                                             disabled={
                                                 loading ||
                                                 !title.trim() ||
-                                                !description.trim() ||
                                                 !content.trim() ||
                                                 selectedTags.length === 0
                                             }

@@ -247,7 +247,7 @@ router.post('/', authenticateToken, async (req: any, res: any) => {
         name,
         description: description || '',
         skills: skills || [],
-        createdBy: userId
+        createdById: userId
       }
     });
 
@@ -264,6 +264,90 @@ router.post('/', authenticateToken, async (req: any, res: any) => {
   } catch (error) {
     console.error('Error creating community:', error);
     res.status(500).json({ error: 'Failed to create community' });
+  }
+});
+
+// Update a community (only creator can update)
+router.put('/:id', authenticateToken, async (req: any, res: any) => {
+  try {
+    const { id } = req.params;
+    const { name, description, skills } = req.body;
+    const { userId } = req.user;
+
+    if (!name || !name.trim()) {
+      return res.status(400).json({ error: 'Community name is required' });
+    }
+
+    // Check if community exists
+    const community = await prisma.community.findUnique({
+      where: { id: parseInt(id) }
+    });
+
+    if (!community) {
+      return res.status(404).json({ error: 'Community not found' });
+    }
+
+    // Check if user is the creator
+    if (community.createdById !== userId) {
+      return res.status(403).json({ error: 'Only the community creator can update this community' });
+    }
+
+    // If name is being changed, check if new name already exists
+    if (name !== community.name) {
+      const existingCommunity = await prisma.community.findUnique({
+        where: { name }
+      });
+
+      if (existingCommunity) {
+        return res.status(400).json({ error: 'Community name already exists' });
+      }
+    }
+
+    const updatedCommunity = await prisma.community.update({
+      where: { id: parseInt(id) },
+      data: {
+        name: name.trim(),
+        description: description?.trim() || '',
+        skills: skills || []
+      }
+    });
+
+    res.json(updatedCommunity);
+  } catch (error) {
+    console.error('Error updating community:', error);
+    res.status(500).json({ error: 'Failed to update community' });
+  }
+});
+
+// Delete a community (only creator can delete)
+router.delete('/:id', authenticateToken, async (req: any, res: any) => {
+  try {
+    const { id } = req.params;
+    const { userId } = req.user;
+
+    // Check if community exists
+    const community = await prisma.community.findUnique({
+      where: { id: parseInt(id) }
+    });
+
+    if (!community) {
+      return res.status(404).json({ error: 'Community not found' });
+    }
+
+    // Check if user is the creator
+    if (community.createdById !== userId) {
+      return res.status(403).json({ error: 'Only the community creator can delete this community' });
+    }
+
+    // Delete the community (cascade will handle members, posts, etc.)
+    await prisma.community.delete({
+      where: { id: parseInt(id) }
+    });
+
+    res.json({ message: 'Community deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting community:', error);
+    res.status(500).json({ error: 'Failed to delete community' });
   }
 });
 
@@ -438,6 +522,11 @@ router.get('/:id/posts', async (req: any, res: any) => {
       where: { communityId: parseInt(id) },
       include: {
         votes: true,
+        tags: {
+          include: {
+            tag: true
+          }
+        },
         _count: {
           select: {
             votes: true
@@ -485,7 +574,8 @@ router.get('/:id/posts', async (req: any, res: any) => {
 
       return {
         ...post,
-        userVote
+        userVote,
+        tags: post.tags.map((pt: any) => pt.tag.name)
       };
     });
 
@@ -493,6 +583,126 @@ router.get('/:id/posts', async (req: any, res: any) => {
   } catch (error) {
     console.error('Error fetching posts:', error);
     res.status(500).json({ error: 'Failed to fetch posts' });
+  }
+});
+
+// Update a community post (only author can update)
+router.put('/:communityId/posts/:postId', authenticateToken, async (req: any, res: any) => {
+  try {
+    const { communityId, postId } = req.params;
+    const { title, content, tags } = req.body;
+    const { userId } = req.user;
+
+    if (!title || !title.trim() || !content || !content.trim()) {
+      return res.status(400).json({ error: 'Title and content are required' });
+    }
+
+    // Check if post exists
+    const post = await prisma.communityPost.findUnique({
+      where: { id: parseInt(postId) },
+      include: { tags: true }
+    });
+
+    if (!post) {
+      return res.status(404).json({ error: 'Post not found' });
+    }
+
+    // Check if post belongs to the community
+    if (post.communityId !== parseInt(communityId)) {
+      return res.status(400).json({ error: 'Post does not belong to this community' });
+    }
+
+    // Check if user is the author
+    if (post.authorId !== userId) {
+      return res.status(403).json({ error: 'Only the post author can update this post' });
+    }
+
+    // Update the post
+    const updatedPost = await prisma.communityPost.update({
+      where: { id: parseInt(postId) },
+      data: {
+        title: title.trim(),
+        content: content.trim()
+      }
+    });
+
+    // Handle tags update if provided
+    if (tags !== undefined) {
+      // Delete existing tags
+      await prisma.communityPostTag.deleteMany({
+        where: { postId: parseInt(postId) }
+      });
+
+      // Add new tags
+      if (Array.isArray(tags) && tags.length > 0) {
+        for (const tagName of tags) {
+          if (typeof tagName === 'string' && tagName.trim()) {
+            const trimmedTagName = tagName.trim().toLowerCase();
+            
+            // Find or create the tag
+            let tag = await prisma.tag.findUnique({
+              where: { name: trimmedTagName }
+            });
+
+            if (!tag) {
+              tag = await prisma.tag.create({
+                data: { name: trimmedTagName }
+              });
+            }
+
+            // Link the tag to the community post
+            await prisma.communityPostTag.create({
+              data: {
+                postId: parseInt(postId),
+                tagId: tag.id
+              }
+            });
+          }
+        }
+      }
+    }
+
+    res.json(updatedPost);
+  } catch (error) {
+    console.error('Error updating post:', error);
+    res.status(500).json({ error: 'Failed to update post' });
+  }
+});
+
+// Delete a community post (only author can delete)
+router.delete('/:communityId/posts/:postId', authenticateToken, async (req: any, res: any) => {
+  try {
+    const { communityId, postId } = req.params;
+    const { userId } = req.user;
+
+    // Check if post exists
+    const post = await prisma.communityPost.findUnique({
+      where: { id: parseInt(postId) }
+    });
+
+    if (!post) {
+      return res.status(404).json({ error: 'Post not found' });
+    }
+
+    // Check if post belongs to the community
+    if (post.communityId !== parseInt(communityId)) {
+      return res.status(400).json({ error: 'Post does not belong to this community' });
+    }
+
+    // Check if user is the author
+    if (post.authorId !== userId) {
+      return res.status(403).json({ error: 'Only the post author can delete this post' });
+    }
+
+    // Delete the post (cascade will handle votes, tags, bookmarks)
+    await prisma.communityPost.delete({
+      where: { id: parseInt(postId) }
+    });
+
+    res.json({ message: 'Post deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting post:', error);
+    res.status(500).json({ error: 'Failed to delete post' });
   }
 });
 
