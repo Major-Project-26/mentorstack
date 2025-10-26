@@ -23,7 +23,6 @@ import {
   Lightbulb,
   CheckCircle,
   AlertCircle,
-  XCircle,
   Target,
   Edit,
   Trash2,
