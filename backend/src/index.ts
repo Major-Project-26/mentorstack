@@ -132,6 +132,34 @@ discussionsWss.on('connection', async (ws: WebSocket, req: IncomingMessage) => {
       return;
     }
 
+    // Send recent history first (last 50 messages)
+    try {
+      const recent = await prisma.$queryRaw<any[]>`
+        SELECT cm.id, cm."communityId", cm."senderId", cm.content, cm."createdAt",
+               u.name as "senderName", u.role as "senderRole"
+        FROM "CommunityMessage" cm
+        JOIN "User" u ON u.id = cm."senderId"
+        WHERE cm."communityId" = ${communityId}
+        ORDER BY cm."createdAt" DESC
+        LIMIT 50
+      `;
+      const historyPayload = {
+        type: 'community.history',
+        communityId,
+        messages: recent.reverse().map((m: any) => ({
+          id: m.id,
+          content: m.content,
+          timestamp: m.createdAt,
+          senderId: m.senderId,
+          senderRole: m.senderRole,
+          senderName: m.senderName,
+        }))
+      } as any;
+      if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(historyPayload));
+    } catch (e) {
+      console.error('Failed to load community history', e);
+    }
+
     // Create ephemeral RabbitMQ consumer bound to topic community.<id>
     const bindingKey = ROUTING_KEYS.community(communityId);
     const consumer = await createEphemeralConsumer(bindingKey, (msg) => {
@@ -147,13 +175,24 @@ discussionsWss.on('connection', async (ws: WebSocket, req: IncomingMessage) => {
         const content = String(payload?.content || '').slice(0, 4000);
         if (!content) return;
 
+        // Persist message
+        const user = await prisma.user.findUnique({ where: { id: auth.userId }, select: { name: true, role: true } });
+        const inserted = await prisma.$queryRaw<any[]>`
+          INSERT INTO "CommunityMessage" ("communityId", "senderId", content, "createdAt", "updatedAt")
+          VALUES (${communityId}, ${auth.userId}, ${content}, NOW(), NOW())
+          RETURNING id, "createdAt"
+        `;
+        const saved = inserted?.[0] ?? { id: undefined, createdAt: new Date().toISOString() };
+
         const enriched = {
           type: 'community.message',
           communityId,
           content,
           senderId: auth.userId,
           senderRole: auth.role,
-          timestamp: new Date().toISOString(),
+          senderName: user?.name || `user-${auth.userId}`,
+          messageId: saved.id,
+          timestamp: saved.createdAt,
         } as any;
 
         await publish({

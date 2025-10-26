@@ -41,6 +41,9 @@ async function resetSequences() {
     await reset('ArticleBookmark');
     await reset('CommunityPostBookmark');
 
+  // Community discussions
+  await reset('CommunityMessage');
+
     // Reputation/Badges/Logs
     await reset('ReputationHistory');
     await reset('Badge');
