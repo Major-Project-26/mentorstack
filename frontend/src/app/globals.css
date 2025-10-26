@@ -139,3 +139,19 @@
   --color-surface-light: #e6fcf1;
   --color-surface-dark: #a8e4c9;
 }
+
+/* Answer Validation Animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.5s ease-out;
+}

@@ -141,6 +141,7 @@ router.get('/:id', async (req: any, res: any) => {
       tags: question.tags.map((qt: any) => qt.tag.name),
       createdAt: question.createdAt,
       authorName: question.author.name,
+      authorId: question.author.id,
       authorRole: question.author.role,
       voteScore: 0,
       answers: question.answers.map((answer: any) => {

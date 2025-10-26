@@ -153,6 +153,7 @@ export interface Question {
   tags: string[];
   createdAt: string;
   authorName: string;
+  authorId?: number;
   answerCount?: number;
   answers?: Answer[];
 }
