@@ -1,9 +1,14 @@
 import express, { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
+import multer from 'multer';
 import { prisma } from '../../lib/prisma';
 import { Role } from '@prisma/client';
+import { postImageStorage, deleteImage, extractPublicId } from '../../lib/cloudinary';
 
 const router = express.Router();
+
+// Configure multer to use Cloudinary storage for post images
+const upload = multer({ storage: postImageStorage });
 
 // Extend Request type to include user
 interface AuthenticatedRequest extends Request {
@@ -426,10 +431,10 @@ router.delete('/:id/leave', authenticateToken, async (req: any, res: any) => {
 });
 
 // Create a post in a community
-router.post('/:id/posts', authenticateToken, async (req: any, res: any) => {
+router.post('/:id/posts', authenticateToken, upload.array('images', 5), async (req: any, res: any) => {
   try {
     const { id } = req.params;
-    const { title, content, imageUrls, tags } = req.body;
+    const { title, content, tags } = req.body;
     const { userId, role } = req.user;
 
     if (!title || !content) {
@@ -449,6 +454,14 @@ router.post('/:id/posts', authenticateToken, async (req: any, res: any) => {
       return res.status(403).json({ error: 'Must be a member to post in this community' });
     }
 
+    // Handle uploaded images from Cloudinary
+    const imageUrls: string[] = [];
+    if (req.files && Array.isArray(req.files)) {
+      for (const file of req.files) {
+        imageUrls.push(file.path); // file.path contains the Cloudinary URL
+      }
+    }
+
     const post = await prisma.communityPost.create({
       data: {
         communityId: parseInt(id),
@@ -456,13 +469,23 @@ router.post('/:id/posts', authenticateToken, async (req: any, res: any) => {
         authorRole: role as Role,
         title,
         content,
-        imageUrls: imageUrls || []
+        imageUrls: imageUrls
       }
     });
 
     // Handle tags if provided
-    if (tags && Array.isArray(tags) && tags.length > 0) {
-      for (const tagName of tags) {
+    let parsedTags: string[] = [];
+    if (tags) {
+      try {
+        parsedTags = typeof tags === 'string' ? JSON.parse(tags) : tags;
+      } catch (error) {
+        console.error('Error parsing tags:', error);
+        parsedTags = Array.isArray(tags) ? tags : [];
+      }
+    }
+
+    if (parsedTags.length > 0) {
+      for (const tagName of parsedTags) {
         if (typeof tagName === 'string' && tagName.trim()) {
           const trimmedTagName = tagName.trim().toLowerCase();
           
@@ -692,6 +715,21 @@ router.delete('/:communityId/posts/:postId', authenticateToken, async (req: any,
     // Check if user is the author
     if (post.authorId !== userId) {
       return res.status(403).json({ error: 'Only the post author can delete this post' });
+    }
+
+    // Delete images from Cloudinary before deleting the post
+    if (post.imageUrls && post.imageUrls.length > 0) {
+      for (const imageUrl of post.imageUrls) {
+        try {
+          const publicId = extractPublicId(imageUrl);
+          if (publicId) {
+            await deleteImage(publicId);
+          }
+        } catch (error) {
+          console.error('Error deleting image from Cloudinary:', error);
+          // Continue with deletion even if image cleanup fails
+        }
+      }
     }
 
     // Delete the post (cascade will handle votes, tags, bookmarks)

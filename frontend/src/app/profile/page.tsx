@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Layout from "../../components/Layout";
+import AvatarUpload from "../../components/AvatarUpload";
 import { authAPI, MenteeProfile, MentorProfile } from "@/lib/auth-api";
 
 export default function ProfilePage() {
@@ -120,15 +121,29 @@ export default function ProfilePage() {
           {/* Profile Header */}
           <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 mb-6">
             <div className="flex items-start gap-6">
-              {/* Profile Picture */}
-              <div className="w-24 h-24 bg-gradient-to-br from-emerald-500 to-blue-500 rounded-2xl flex items-center justify-center flex-shrink-0">
-                <span className="text-white text-3xl font-bold">
-                  {profile.name.split(' ').map((n: string) => n[0]).join('')}
-                </span>
-              </div>
+              {/* Profile Picture with Upload */}
+              <AvatarUpload
+                currentAvatarUrl={profile.avatarUrl || null}
+                onUploadSuccess={(newUrl) => {
+                  if (menteeProfile) {
+                    setMenteeProfile({ ...menteeProfile, avatarUrl: newUrl });
+                  } else if (mentorProfile) {
+                    setMentorProfile({ ...mentorProfile, avatarUrl: newUrl });
+                  }
+                }}
+                onDeleteSuccess={() => {
+                  if (menteeProfile) {
+                    setMenteeProfile({ ...menteeProfile, avatarUrl: null });
+                  } else if (mentorProfile) {
+                    setMentorProfile({ ...mentorProfile, avatarUrl: null });
+                  }
+                }}
+                size="xl"
+                editable={true}
+              />
               
               {/* Profile Info */}
-              <div className="flex-1">
+              <div className="flex-1">`
                 <div className="flex items-center gap-4 mb-2">
                   <h1 className="text-3xl font-bold text-slate-800">{profile.name}</h1>
                   <span className="text-slate-500">User{profile.id}</span>

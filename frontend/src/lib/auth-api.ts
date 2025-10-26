@@ -21,6 +21,7 @@ export interface User {
   name: string;
   email: string;
   role: 'mentor' | 'mentee' | 'admin';
+  avatarUrl?: string | null;
 }
 
 export interface AuthResponse {
@@ -38,6 +39,7 @@ export interface MenteeProfile {
   name: string;
   email: string;
   bio: string;
+  avatarUrl?: string | null;
   skills: string[];
   reputation: number;
   joinedDate: string;

@@ -214,6 +214,7 @@ router.get('/profile/me', authenticateToken, async (req: any, res: any) => {
       name: mentee.name,
       email: mentee.email,
       bio: mentee.bio,
+      avatarUrl: mentee.avatarUrl,
       skills: mentee.skills,
       jobTitle: mentee.jobTitle,
       department: mentee.department,

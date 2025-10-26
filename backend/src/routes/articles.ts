@@ -1,37 +1,14 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
-import multer, { FileFilterCallback } from 'multer';
-import path from 'path';
-import { Request } from 'express';
+import multer from 'multer';
 import { prisma } from '../../lib/prisma';
 import { Role } from '@prisma/client';
+import { articleImageStorage, deleteImage, extractPublicId } from '../../lib/cloudinary';
 
 const router = express.Router();
 
-// Configure multer for file uploads
-const storage = multer.diskStorage({
-  destination: (req: Request, file: Express.Multer.File, cb: (error: Error | null, destination: string) => void) => {
-    cb(null, 'uploads/articles/'); // Make sure this directory exists
-  },
-  filename: (req: Request, file: Express.Multer.File, cb: (error: Error | null, filename: string) => void) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
-  }
-});
-
-const upload = multer({ 
-  storage: storage,
-  limits: {
-    fileSize: 5 * 1024 * 1024, // 5MB limit
-  },
-  fileFilter: (req: Request, file: Express.Multer.File, cb: FileFilterCallback) => {
-    if (file.mimetype.startsWith('image/')) {
-      cb(null, true);
-    } else {
-      cb(new Error('Only image files are allowed!'));
-    }
-  }
-});
+// Configure multer to use Cloudinary storage for article images
+const upload = multer({ storage: articleImageStorage });
 
 // Middleware to verify JWT token
 const authenticateToken = (req: any, res: any, next: any) => {
@@ -279,14 +256,12 @@ router.post('/', authenticateToken, upload.array('images', 5), async (req: any, 
       return res.status(400).json({ message: 'Title and content are required' });
     }
 
-    // Handle uploaded images
+    // Handle uploaded images from Cloudinary
     const imageUrls: string[] = [];
     if (req.files && Array.isArray(req.files)) {
       for (const file of req.files) {
-        // In production, you'd upload to cloud storage and get URLs
-        // For now, we'll create local URLs
-        const imageUrl = `/uploads/articles/${file.filename}`;
-        imageUrls.push(imageUrl);
+        // Cloudinary automatically uploads and provides the URL
+        imageUrls.push(file.path); // file.path contains the Cloudinary URL
       }
     }
 
@@ -610,6 +585,21 @@ router.delete('/:id', authenticateToken, async (req: any, res: any) => {
 
     if (article.authorId !== userId) {
       return res.status(403).json({ message: 'You can only delete your own articles' });
+    }
+
+    // Delete images from Cloudinary before deleting the article
+    if (article.imageUrls && article.imageUrls.length > 0) {
+      for (const imageUrl of article.imageUrls) {
+        try {
+          const publicId = extractPublicId(imageUrl);
+          if (publicId) {
+            await deleteImage(publicId);
+          }
+        } catch (error) {
+          console.error('Error deleting image from Cloudinary:', error);
+          // Continue with deletion even if image cleanup fails
+        }
+      }
     }
 
     // Delete the article (cascade will handle related records)
