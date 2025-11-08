@@ -461,6 +461,20 @@ class AdminAPI {
     return response.json();
   }
 
+  async deleteCommunityMember(communityId: number, memberId: number): Promise<{ message: string }> {
+    const response = await fetch(`${ADMIN_API_BASE_URL}/communities/${communityId}/members/${memberId}` , {
+      method: 'DELETE',
+      headers: this.getHeaders(true),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to remove community member');
+    }
+
+    return response.json();
+  }
+
   // ==================== Content Management ====================
   
   async getQuestions(page = 1, limit = 20): Promise<{
