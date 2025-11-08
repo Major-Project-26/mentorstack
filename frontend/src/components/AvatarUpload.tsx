@@ -232,7 +232,7 @@ export default function AvatarUpload({
       {editable && !isProcessing && (
         <button
           onClick={handleClick}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm font-medium"
+          className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg transition-colors text-sm font-medium"
         >
           <Upload size={16} />
           {avatarUrl ? 'Change Avatar' : 'Upload Avatar'}

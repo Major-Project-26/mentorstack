@@ -93,8 +93,11 @@ export default function ProfilePage() {
   if (loading) {
     return (
       <Layout>
-        <div className="flex justify-center items-center h-64">
-          <div className="text-lg">Loading...</div>
+        <div className="flex justify-center items-center h-64" style={{ backgroundColor: 'var(--color-neutral-dark)' }}>
+          <div className="flex flex-col items-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 mb-4" style={{ borderColor: 'var(--color-primary)' }}></div>
+            <div className="text-lg" style={{ color: 'var(--color-tertiary)' }}>Loading profile...</div>
+          </div>
         </div>
       </Layout>
     );
@@ -103,8 +106,8 @@ export default function ProfilePage() {
   if (!menteeProfile && !mentorProfile) {
     return (
       <Layout>
-        <div className="flex justify-center items-center h-64">
-          <div className="text-lg">Profile not found</div>
+        <div className="flex justify-center items-center h-64" style={{ backgroundColor: 'var(--color-neutral-dark)' }}>
+          <div className="text-lg" style={{ color: 'var(--color-tertiary)' }}>Profile not found</div>
         </div>
       </Layout>
     );
@@ -115,11 +118,17 @@ export default function ProfilePage() {
 
   return (
     <Layout>
-      <div className="flex flex-1 p-8 gap-8 overflow-auto">
+      <div className="flex flex-1 p-8 gap-8 overflow-auto" style={{ backgroundColor: 'var(--color-neutral-dark)' }}>
         {/* Main Profile Content */}
         <div className="flex-1">
-          {/* Profile Header */}
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 mb-6">
+          {/* Profile Header with gradient and animation */}
+          <div 
+            className="rounded-2xl shadow-sm border p-8 mb-6 animate-fadeIn hover:shadow-lg transition-all duration-300"
+            style={{
+              backgroundColor: 'var(--color-neutral)',
+              borderColor: 'var(--color-surface-dark)'
+            }}
+          >
             <div className="flex items-start gap-6">
               {/* Profile Picture with Upload */}
               <AvatarUpload
@@ -143,20 +152,26 @@ export default function ProfilePage() {
               />
               
               {/* Profile Info */}
-              <div className="flex-1">`
-                <div className="flex items-center gap-4 mb-2">
-                  <h1 className="text-3xl font-bold text-slate-800">{profile.name}</h1>
-                  <span className="text-slate-500">User{profile.id}</span>
-                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                    userRole === 'mentor' 
-                      ? 'bg-blue-100 text-blue-700' 
-                      : 'bg-green-100 text-green-700'
-                  }`}>
-                    {userRole === 'mentor' ? 'Mentor' : 'Mentee'}
+              <div className="flex-1">
+                <div className="flex items-center gap-4 mb-2 animate-slideInRight">
+                  <h1 className="text-3xl font-bold" style={{ color: 'var(--color-tertiary)' }}>{profile.name}</h1>
+                  <span style={{ color: 'var(--color-tertiary-light)' }}>User{profile.id}</span>
+                  <span 
+                    className="px-3 py-1 rounded-full text-sm font-medium transition-all duration-300 hover:scale-105"
+                    style={{
+                      backgroundColor: userRole === 'mentor' ? 'var(--color-surface-light)' : 'var(--color-primary)',
+                      color: userRole === 'mentor' ? 'var(--color-secondary)' : 'var(--color-neutral)'
+                    }}
+                  >
+                    {userRole === 'mentor' ? '🎓 Mentor' : '📚 Mentee'}
                   </span>
                   <button 
                     onClick={() => setIsEditing(!isEditing)}
-                    className="ml-auto p-2 text-slate-500 hover:text-slate-700 transition"
+                    className="ml-auto p-2 rounded-lg transition-all duration-300 hover:scale-110 hover:rotate-90"
+                    style={{
+                      color: 'var(--color-tertiary-light)',
+                      backgroundColor: 'var(--color-surface-light)'
+                    }}
                     title="Edit profile"
                     aria-label="Edit profile"
                   >
@@ -168,7 +183,7 @@ export default function ProfilePage() {
                 </div>
                 
                 {isEditing ? (
-                  <div className="space-y-4">
+                  <div className="space-y-4 animate-fadeIn">
                     <textarea
                       value={profile.bio}
                       onChange={(e) => {
@@ -178,7 +193,14 @@ export default function ProfilePage() {
                           setMentorProfile({...mentorProfile, bio: e.target.value});
                         }
                       }}
-                      className="w-full p-3 border border-slate-300 rounded-lg text-slate-600 resize-none"
+                      className="w-full p-3 rounded-lg resize-none transition-all duration-300 focus:ring-2 focus:outline-none"
+                      style={{
+                        backgroundColor: 'var(--color-surface)',
+                        borderColor: 'var(--color-surface-dark)',
+                        color: 'var(--color-tertiary)',
+                        borderWidth: '1px',
+                        borderStyle: 'solid'
+                      }}
                       rows={2}
                       placeholder="Write a short description about yourself"
                     />
@@ -187,44 +209,71 @@ export default function ProfilePage() {
                         type="text"
                         value={mentorProfile.location || ''}
                         onChange={(e) => setMentorProfile({...mentorProfile, location: e.target.value})}
-                        className="w-full p-3 border border-slate-300 rounded-lg text-slate-600"
+                        className="w-full p-3 rounded-lg transition-all duration-300 focus:ring-2 focus:outline-none"
+                        style={{
+                          backgroundColor: 'var(--color-surface)',
+                          borderColor: 'var(--color-surface-dark)',
+                          color: 'var(--color-tertiary)',
+                          borderWidth: '1px',
+                          borderStyle: 'solid'
+                        }}
                         placeholder="Location (optional)"
                       />
                     )}
                   </div>
                 ) : (
-                  <div className="space-y-2">
-                    <p className="text-slate-600 mb-4">{profile.bio}</p>
+                  <div className="space-y-2 animate-fadeIn">
+                    <p className="mb-4" style={{ color: 'var(--color-tertiary)' }}>{profile.bio}</p>
                     {userRole === 'mentor' && mentorProfile?.location && (
-                      <p className="text-slate-500 text-sm">📍 {mentorProfile.location}</p>
+                      <p className="text-sm" style={{ color: 'var(--color-tertiary-light)' }}>📍 {mentorProfile.location}</p>
                     )}
                   </div>
                 )}
                 
                 {/* Action Buttons */}
-                <div className="flex gap-3">
+                <div className="flex gap-3 animate-fadeInUp">
                   <Link href="/ask-question">
-                    <button className="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg font-medium hover:bg-slate-200 transition">
-                      Ask Question
+                    <button 
+                      className="px-4 py-2 rounded-lg font-medium transition-all duration-300 hover:scale-105 hover:shadow-lg"
+                      style={{
+                        backgroundColor: 'var(--color-surface-light)',
+                        color: 'var(--color-secondary)'
+                      }}
+                    >
+                      ❓ Ask Question
                     </button>
                   </Link>
                   <Link href="/create-article">
-                    <button className="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg font-medium hover:bg-slate-200 transition">
-                      Write Article
+                    <button 
+                      className="px-4 py-2 rounded-lg font-medium transition-all duration-300 hover:scale-105 hover:shadow-lg"
+                      style={{
+                        backgroundColor: 'var(--color-surface-light)',
+                        color: 'var(--color-secondary)'
+                      }}
+                    >
+                      ✍️ Write Article
                     </button>
                   </Link>
                   <button 
                     onClick={() => setIsEditing(!isEditing)}
-                    className="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg font-medium hover:bg-slate-200 transition"
+                    className="px-4 py-2 rounded-lg font-medium transition-all duration-300 hover:scale-105 hover:shadow-lg"
+                    style={{
+                      backgroundColor: 'var(--color-surface)',
+                      color: 'var(--color-tertiary)'
+                    }}
                   >
-                    {isEditing ? 'Cancel' : 'Edit Profile'}
+                    {isEditing ? '❌ Cancel' : '✏️ Edit Profile'}
                   </button>
                   {isEditing && (
                     <button 
                       onClick={handleSaveProfile}
-                      className="px-4 py-2 bg-emerald-500 text-white rounded-lg font-medium hover:bg-emerald-600 transition"
+                      className="px-4 py-2 rounded-lg font-medium transition-all duration-300 hover:scale-105 hover:shadow-lg animate-fadeIn"
+                      style={{
+                        backgroundColor: 'var(--color-primary)',
+                        color: 'var(--color-neutral)'
+                      }}
                     >
-                      Save
+                      💾 Save
                     </button>
                   )}
                 </div>
@@ -233,88 +282,108 @@ export default function ProfilePage() {
           </div>
 
           {/* Profile Tabs */}
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-200">
+          <div 
+            className="rounded-2xl shadow-lg border animate-fadeIn"
+            style={{
+              backgroundColor: 'var(--color-neutral)',
+              borderColor: 'var(--color-surface-dark)'
+            }}
+          >
             {/* Tab Navigation */}
-            <div className="border-b border-slate-200 px-6">
+            <div 
+              className="px-6"
+              style={{ 
+                borderBottom: '1px solid var(--color-surface-dark)'
+              }}
+            >
               <div className="flex gap-8">
-                {userRole === 'mentee' ? (
-                  ["My Questions", "Articles", "Posts", "Answered", "Bookmarked", "Mentees"].map((tab) => (
-                    <button
-                      key={tab}
-                      onClick={() => setActiveTab(tab)}
-                      className={`py-4 font-medium border-b-2 transition ${
-                        activeTab === tab
-                          ? "border-emerald-500 text-emerald-600"
-                          : "border-transparent text-slate-500 hover:text-slate-700"
-                      }`}
-                    >
-                      {tab}
-                    </button>
-                  ))
-                ) : (
-                  ["My Questions", "My Answers", "Articles", "Mentees", "Requests"].map((tab) => (
-                    <button
-                      key={tab}
-                      onClick={() => setActiveTab(tab)}
-                      className={`py-4 font-medium border-b-2 transition ${
-                        activeTab === tab
-                          ? "border-emerald-500 text-emerald-600"
-                          : "border-transparent text-slate-500 hover:text-slate-700"
-                      }`}
-                    >
-                      {tab}
-                    </button>
-                  ))
-                )}
+                {["My Questions", "Articles", "Posts", "Answered", "Bookmarked"].map((tab) => (
+                  <button
+                    key={tab}
+                    onClick={() => setActiveTab(tab)}
+                    className="py-4 font-medium border-b-2 transition-all duration-300 hover:scale-105"
+                    style={{
+                      borderColor: activeTab === tab ? 'var(--color-primary)' : 'transparent',
+                      color: activeTab === tab ? 'var(--color-primary)' : 'var(--color-tertiary-light)'
+                    }}
+                  >
+                    {tab}
+                  </button>
+                ))}
               </div>
             </div>
 
             {/* Tab Content */}
             <div className="p-6">
-              {/* Mentee Tabs */}
-              {userRole === 'mentee' && menteeProfile && (
+              {/* Unified Tabs for Both Roles */}
+              {profile && (
                 <>
                   {activeTab === "My Questions" && (
-                    <div>
-                      {menteeProfile.questions.length > 0 ? (
+                    <div className="animate-fadeIn">
+                      {((menteeProfile?.questions || mentorProfile?.questions || []).length > 0) ? (
                         <div className="space-y-4">
-                          {menteeProfile.questions.map((question) => (
+                          {(menteeProfile?.questions || mentorProfile?.questions || []).map((question, index) => (
                             <div 
                               key={question.id} 
                               onClick={() => router.push(`/questions/${question.id}`)}
-                              className="border border-slate-200 rounded-lg p-4 hover:bg-slate-50 transition cursor-pointer"
+                              className="rounded-lg p-4 transition-all duration-300 hover:shadow-lg hover:scale-105 cursor-pointer animate-fadeInUp"
+                              style={{
+                                backgroundColor: 'var(--color-surface)',
+                                borderWidth: '1px',
+                                borderStyle: 'solid',
+                                borderColor: 'var(--color-surface-dark)',
+                                animationDelay: `${index * 0.1}s`
+                              }}
                             >
-                              <h4 className="font-semibold text-slate-800 mb-2 hover:text-emerald-600">{question.title}</h4>
+                              <h4 
+                                className="font-semibold mb-2 transition-colors duration-300"
+                                style={{ color: 'var(--color-tertiary)' }}
+                              >
+                                {question.title}
+                              </h4>
                               {question.description && (
-                                <p className="text-slate-600 text-sm mb-3">{question.description}</p>
+                                <p className="text-sm mb-3" style={{ color: 'var(--color-tertiary-light)' }}>{question.description}</p>
                               )}
                               {question.tags && question.tags.length > 0 && (
                                 <div className="flex gap-2 mb-2">
                                   {question.tags.map((tag) => (
                                     <span
                                       key={tag}
-                                      className="px-2 py-1 text-xs bg-emerald-100 text-emerald-700 rounded-full"
+                                      className="px-2 py-1 text-xs rounded-full"
+                                      style={{
+                                        backgroundColor: 'var(--color-primary)',
+                                        color: 'var(--color-neutral)'
+                                      }}
                                     >
                                       {tag}
                                     </span>
                                   ))}
                                 </div>
                               )}
-                              <div className="text-xs text-slate-500">
+                              <div className="text-xs" style={{ color: 'var(--color-tertiary-light)' }}>
                                 {new Date(question.createdAt).toLocaleDateString()}
                               </div>
                             </div>
                           ))}
                         </div>
                       ) : (
-                        <div className="text-center py-12">
-                          <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <div className="text-center py-12 animate-fadeIn">
+                          <div 
+                            className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 animate-float"
+                            style={{ backgroundColor: 'var(--color-surface-light)' }}
+                          >
                             <span className="text-2xl">❓</span>
                           </div>
-                          <h3 className="text-xl font-semibold text-slate-700 mb-2">No questions yet</h3>
-                          <p className="text-slate-500 mb-6">Start your learning journey by asking your first question.</p>
+                          <h3 className="text-xl font-semibold mb-2" style={{ color: 'var(--color-tertiary)' }}>No questions yet</h3>
+                          <p className="mb-6" style={{ color: 'var(--color-tertiary-light)' }}>Start your learning journey by asking your first question.</p>
                           <Link href="/ask-question">
-                            <button className="px-6 py-3 bg-emerald-500 text-white font-medium rounded-lg hover:bg-emerald-600 transition">
+                            <button 
+                              className="px-6 py-3 font-medium rounded-lg transition-all duration-300 hover:scale-105 hover:shadow-lg"
+                              style={{
+                                backgroundColor: 'var(--color-primary)',
+                                color: 'var(--color-neutral)'
+                              }}
+                            >
                               Ask Your First Question
                             </button>
                           </Link>
@@ -324,18 +393,25 @@ export default function ProfilePage() {
                   )}
                   
                   {activeTab === "Posts" && (
-                    <div>
-                      {menteeProfile.communityPosts && menteeProfile.communityPosts.length > 0 ? (
+                    <div className="animate-fadeIn">
+                      {((menteeProfile?.communityPosts || []).length > 0) ? (
                         <div className="space-y-4">
-                          {menteeProfile.communityPosts.map((post) => (
+                          {(menteeProfile?.communityPosts || []).map((post, index) => (
                             <div 
                               key={post.id} 
                               onClick={() => router.push(`/community/${post.communityId}/post/${post.id}`)}
-                              className="border border-slate-200 rounded-lg p-4 hover:bg-slate-50 transition cursor-pointer"
+                              className="rounded-lg p-4 transition-all duration-300 hover:shadow-lg hover:scale-105 cursor-pointer animate-fadeInUp"
+                              style={{
+                                backgroundColor: 'var(--color-surface)',
+                                borderWidth: '1px',
+                                borderStyle: 'solid',
+                                borderColor: 'var(--color-surface-dark)',
+                                animationDelay: `${index * 0.1}s`
+                              }}
                             >
-                              <h4 className="font-semibold text-slate-800 mb-2 hover:text-emerald-600">{post.title}</h4>
-                              <p className="text-slate-600 text-sm mb-3 line-clamp-3">{post.content}</p>
-                              <div className="flex items-center gap-4 text-xs text-slate-500">
+                              <h4 className="font-semibold mb-2" style={{ color: 'var(--color-tertiary)' }}>{post.title}</h4>
+                              <p className="text-sm mb-3 line-clamp-3" style={{ color: 'var(--color-tertiary-light)' }}>{post.content}</p>
+                              <div className="flex items-center gap-4 text-xs" style={{ color: 'var(--color-tertiary-light)' }}>
                                 <span>in {post.communityName}</span>
                                 <span>•</span>
                                 <span>{post.upvotes - post.downvotes} votes</span>
@@ -346,46 +422,69 @@ export default function ProfilePage() {
                           ))}
                         </div>
                       ) : (
-                        <div className="text-center py-12">
-                          <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <div className="text-center py-12 animate-fadeIn">
+                          <div 
+                            className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 animate-float"
+                            style={{ backgroundColor: 'var(--color-surface-light)' }}
+                          >
                             <span className="text-2xl">💬</span>
                           </div>
-                          <h3 className="text-xl font-semibold text-slate-700 mb-2">No community posts yet</h3>
-                          <p className="text-slate-500">Join a community and share your thoughts!</p>
+                          <h3 className="text-xl font-semibold mb-2" style={{ color: 'var(--color-tertiary)' }}>No community posts yet</h3>
+                          <p style={{ color: 'var(--color-tertiary-light)' }}>Join a community and share your thoughts!</p>
                         </div>
                       )}
                     </div>
                   )}
 
                   {activeTab === "Articles" && (
-                    <div>
-                      {menteeProfile.articles && menteeProfile.articles.length > 0 ? (
+                    <div className="animate-fadeIn">
+                      {((menteeProfile?.articles || mentorProfile?.articles || []).length > 0) ? (
                         <div className="space-y-4">
-                          {menteeProfile.articles.map((article) => (
+                          {(menteeProfile?.articles || mentorProfile?.articles || []).map((article, index) => (
                             <div 
                               key={article.id} 
                               onClick={() => router.push(`/articles/${article.id}`)}
-                              className="border border-slate-200 rounded-lg p-4 hover:bg-slate-50 transition cursor-pointer"
+                              className="rounded-lg p-4 transition-all duration-300 hover:shadow-lg hover:scale-105 cursor-pointer animate-fadeInUp"
+                              style={{
+                                backgroundColor: 'var(--color-surface)',
+                                borderWidth: '1px',
+                                borderStyle: 'solid',
+                                borderColor: 'var(--color-surface-dark)',
+                                animationDelay: `${index * 0.1}s`
+                              }}
                             >
-                              <h4 className="font-semibold text-slate-800 mb-2 hover:text-emerald-600">{article.title}</h4>
-                              <p className="text-slate-600 text-sm mb-3 line-clamp-3">{article.content}</p>
-                              <div className="flex items-center gap-4 text-xs text-slate-500">
-                                <span>{article.upvotes - article.downvotes} votes</span>
-                                <span>•</span>
+                              <h4 className="font-semibold mb-2" style={{ color: 'var(--color-tertiary)' }}>{article.title}</h4>
+                              <p className="text-sm mb-3 line-clamp-3" style={{ color: 'var(--color-tertiary-light)' }}>{article.content}</p>
+                              <div className="flex items-center gap-4 text-xs" style={{ color: 'var(--color-tertiary-light)' }}>
+                                {'upvotes' in article && 'downvotes' in article && (
+                                  <>
+                                    <span>{(article as any).upvotes - (article as any).downvotes} votes</span>
+                                    <span>•</span>
+                                  </>
+                                )}
                                 <span>Published on {new Date(article.createdAt).toLocaleDateString()}</span>
                               </div>
                             </div>
                           ))}
                         </div>
                       ) : (
-                        <div className="text-center py-12">
-                          <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <div className="text-center py-12 animate-fadeIn">
+                          <div 
+                            className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 animate-float"
+                            style={{ backgroundColor: 'var(--color-surface-light)' }}
+                          >
                             <span className="text-2xl">📄</span>
                           </div>
-                          <h3 className="text-xl font-semibold text-slate-700 mb-2">No articles yet</h3>
-                          <p className="text-slate-500 mb-6">Share your knowledge by writing your first article.</p>
+                          <h3 className="text-xl font-semibold mb-2" style={{ color: 'var(--color-tertiary)' }}>No articles yet</h3>
+                          <p className="mb-6" style={{ color: 'var(--color-tertiary-light)' }}>Share your knowledge by writing your first article.</p>
                           <Link href="/create-article">
-                            <button className="px-6 py-3 bg-emerald-500 text-white font-medium rounded-lg hover:bg-emerald-600 transition">
+                            <button 
+                              className="px-6 py-3 font-medium rounded-lg transition-all duration-300 hover:scale-105 hover:shadow-lg"
+                              style={{
+                                backgroundColor: 'var(--color-primary)',
+                                color: 'var(--color-neutral)'
+                              }}
+                            >
                               Write Your First Article
                             </button>
                           </Link>
@@ -395,43 +494,66 @@ export default function ProfilePage() {
                   )}
 
                   {activeTab === "Answered" && (
-                    <div>
-                      {menteeProfile.answeredQuestions && menteeProfile.answeredQuestions.length > 0 ? (
+                    <div className="animate-fadeIn">
+                      {((menteeProfile?.answeredQuestions || mentorProfile?.answers || []).length > 0) ? (
                         <div className="space-y-4">
-                          {menteeProfile.answeredQuestions.map((answer) => (
-                            <div 
-                              key={answer.id} 
-                              onClick={() => router.push(`/questions/${answer.questionId}`)}
-                              className="border border-slate-200 rounded-lg p-4 hover:bg-slate-50 transition cursor-pointer"
-                            >
-                              <h4 className="font-semibold text-slate-800 mb-2 hover:text-emerald-600">
-                                Re: {answer.questionTitle}
-                              </h4>
-                              <p className="text-slate-600 text-sm mb-3 line-clamp-3">{answer.content}</p>
-                              <div className="flex items-center gap-4 text-xs text-slate-500">
-                                <span>{answer.upvotes - answer.downvotes} votes</span>
-                                <span>•</span>
-                                <span>Answered on {new Date(answer.createdAt).toLocaleDateString()}</span>
+                          {(menteeProfile?.answeredQuestions || mentorProfile?.answers || []).map((answer, index) => {
+                            const questionId = 'questionId' in answer ? answer.questionId : answer.question.id;
+                            const questionTitle = 'questionTitle' in answer ? answer.questionTitle : answer.question.title;
+                            const hasVotes = 'upvotes' in answer && 'downvotes' in answer;
+                            
+                            return (
+                              <div 
+                                key={answer.id} 
+                                onClick={() => router.push(`/questions/${questionId}`)}
+                                className="rounded-lg p-4 transition-all duration-300 hover:shadow-lg hover:scale-105 cursor-pointer animate-fadeInUp"
+                                style={{
+                                  backgroundColor: 'var(--color-surface)',
+                                  borderWidth: '1px',
+                                  borderStyle: 'solid',
+                                  borderColor: 'var(--color-surface-dark)',
+                                  animationDelay: `${index * 0.1}s`
+                                }}
+                              >
+                                <h4 className="font-semibold mb-2" style={{ color: 'var(--color-tertiary)' }}>
+                                  Re: {questionTitle}
+                                </h4>
+                                <p className="text-sm mb-3 line-clamp-3" style={{ color: 'var(--color-tertiary-light)' }}>{answer.content}</p>
+                                <div className="flex items-center gap-4 text-xs" style={{ color: 'var(--color-tertiary-light)' }}>
+                                  {hasVotes && (
+                                    <>
+                                      <span>{(answer as any).upvotes - (answer as any).downvotes} votes</span>
+                                      <span>•</span>
+                                    </>
+                                  )}
+                                  <span>Answered on {new Date(answer.createdAt).toLocaleDateString()}</span>
+                                </div>
                               </div>
-                            </div>
-                          ))}
+                            );
+                          })}
                         </div>
                       ) : (
-                        <div className="text-center py-12">
-                          <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <div className="text-center py-12 animate-fadeIn">
+                          <div 
+                            className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 animate-float"
+                            style={{ backgroundColor: 'var(--color-surface-light)' }}
+                          >
                             <span className="text-2xl">💡</span>
                           </div>
-                          <h3 className="text-xl font-semibold text-slate-700 mb-2">No answers yet</h3>
-                          <p className="text-slate-500">Start helping others by answering questions!</p>
+                          <h3 className="text-xl font-semibold mb-2" style={{ color: 'var(--color-tertiary)' }}>No answers yet</h3>
+                          <p style={{ color: 'var(--color-tertiary-light)' }}>Start helping others by answering questions!</p>
                         </div>
                       )}
                     </div>
                   )}
 
                   {activeTab === "Bookmarked" && (
-                    <div className="space-y-6">
+                    <div className="space-y-6 animate-fadeIn">
                       {/* Sub-tabs navigation */}
-                      <div className="border-b border-slate-200 -mx-6 px-6">
+                      <div 
+                        className="-mx-6 px-6"
+                        style={{ borderBottom: '1px solid var(--color-surface-dark)' }}
+                      >
                         <div className="flex gap-6 overflow-x-auto">
                           {([
                             { key: 'Questions', count: bookmarks?.questions.length || 0 },
@@ -441,15 +563,15 @@ export default function ProfilePage() {
                             <button
                               key={key}
                               onClick={() => setBookmarkedSubTab(key)}
-                              className={`py-3 font-medium border-b-2 transition whitespace-nowrap ${
-                                bookmarkedSubTab === key
-                                  ? 'border-emerald-500 text-emerald-600'
-                                  : 'border-transparent text-slate-500 hover:text-slate-700'
-                              }`}
+                              className="py-3 font-medium border-b-2 transition-all duration-300 whitespace-nowrap hover:scale-105"
+                              style={{
+                                borderColor: bookmarkedSubTab === key ? 'var(--color-secondary)' : 'transparent',
+                                color: bookmarkedSubTab === key ? 'var(--color-secondary)' : 'var(--color-tertiary-light)'
+                              }}
                               aria-current={bookmarkedSubTab === key ? 'page' : undefined}
                             >
                               {key}
-                              <span className="ml-2 text-xs text-slate-400">{count}</span>
+                              <span className="ml-2 text-xs" style={{ color: 'var(--color-tertiary-light)' }}>{count}</span>
                             </button>
                           ))}
                         </div>
@@ -457,234 +579,107 @@ export default function ProfilePage() {
 
                       {/* Sub-tab content */}
                       {bookmarkedSubTab === 'Questions' && (
-                        <div>
+                        <div className="animate-fadeIn">
                           {bookmarks && bookmarks.questions.length > 0 ? (
                             <div className="space-y-3">
-                              {bookmarks.questions.map((b) => (
-                                <div key={`q-${b.questionId}`} className="border border-slate-200 rounded-lg p-3 hover:bg-slate-50 transition">
-                                  <a className="text-emerald-700 hover:underline font-medium" href={`/questions/${b.questionId}`}>{b.title}</a>
-                                  <div className="text-xs text-slate-500 mt-1">Saved {new Date(b.createdAt).toLocaleDateString()}</div>
+                              {bookmarks.questions.map((b, index) => (
+                                <div 
+                                  key={`q-${b.questionId}`} 
+                                  className="rounded-lg p-3 transition-all duration-300 hover:shadow-lg hover:scale-105 animate-fadeInUp"
+                                  style={{
+                                    backgroundColor: 'var(--color-surface)',
+                                    borderWidth: '1px',
+                                    borderStyle: 'solid',
+                                    borderColor: 'var(--color-surface-dark)',
+                                    animationDelay: `${index * 0.05}s`
+                                  }}
+                                >
+                                  <a 
+                                    className="font-medium hover:underline" 
+                                    style={{ color: 'var(--color-secondary)' }}
+                                    href={`/questions/${b.questionId}`}
+                                  >
+                                    {b.title}
+                                  </a>
+                                  <div className="text-xs mt-1" style={{ color: 'var(--color-tertiary-light)' }}>
+                                    Saved {new Date(b.createdAt).toLocaleDateString()}
+                                  </div>
                                 </div>
                               ))}
                             </div>
                           ) : (
-                            <div className="text-slate-500">No bookmarked questions.</div>
+                            <div style={{ color: 'var(--color-tertiary-light)' }}>No bookmarked questions.</div>
                           )}
                         </div>
                       )}
 
                       {bookmarkedSubTab === 'Articles' && (
-                        <div>
+                        <div className="animate-fadeIn">
                           {bookmarks && bookmarks.articles.length > 0 ? (
                             <div className="space-y-3">
-                              {bookmarks.articles.map((b) => (
-                                <div key={`a-${b.articleId}`} className="border border-slate-200 rounded-lg p-3 hover:bg-slate-50 transition">
-                                  <a className="text-emerald-700 hover:underline font-medium" href={`/article/${b.articleId}`}>{b.title}</a>
-                                  <div className="text-xs text-slate-500 mt-1">Saved {new Date(b.createdAt).toLocaleDateString()}</div>
+                              {bookmarks.articles.map((b, index) => (
+                                <div 
+                                  key={`a-${b.articleId}`} 
+                                  className="rounded-lg p-3 transition-all duration-300 hover:shadow-lg hover:scale-105 animate-fadeInUp"
+                                  style={{
+                                    backgroundColor: 'var(--color-surface)',
+                                    borderWidth: '1px',
+                                    borderStyle: 'solid',
+                                    borderColor: 'var(--color-surface-dark)',
+                                    animationDelay: `${index * 0.05}s`
+                                  }}
+                                >
+                                  <a 
+                                    className="font-medium hover:underline" 
+                                    style={{ color: 'var(--color-secondary)' }}
+                                    href={`/article/${b.articleId}`}
+                                  >
+                                    {b.title}
+                                  </a>
+                                  <div className="text-xs mt-1" style={{ color: 'var(--color-tertiary-light)' }}>
+                                    Saved {new Date(b.createdAt).toLocaleDateString()}
+                                  </div>
                                 </div>
                               ))}
                             </div>
                           ) : (
-                            <div className="text-slate-500">No bookmarked articles.</div>
+                            <div style={{ color: 'var(--color-tertiary-light)' }}>No bookmarked articles.</div>
                           )}
                         </div>
                       )}
 
                       {bookmarkedSubTab === 'Community Posts' && (
-                        <div>
+                        <div className="animate-fadeIn">
                           {bookmarks && bookmarks.posts.length > 0 ? (
                             <div className="space-y-3">
-                              {bookmarks.posts.map((b) => (
-                                <div key={`p-${b.postId}`} className="border border-slate-200 rounded-lg p-3 hover:bg-slate-50 transition">
-                                  <a className="text-emerald-700 hover:underline font-medium" href={`/community/${b.communityId}/post/${b.postId}`}>{b.title}</a>
-                                  <div className="text-xs text-slate-500 mt-1">Saved {new Date(b.createdAt).toLocaleDateString()}</div>
+                              {bookmarks.posts.map((b, index) => (
+                                <div 
+                                  key={`p-${b.postId}`} 
+                                  className="rounded-lg p-3 transition-all duration-300 hover:shadow-lg hover:scale-105 animate-fadeInUp"
+                                  style={{
+                                    backgroundColor: 'var(--color-surface)',
+                                    borderWidth: '1px',
+                                    borderStyle: 'solid',
+                                    borderColor: 'var(--color-surface-dark)',
+                                    animationDelay: `${index * 0.05}s`
+                                  }}
+                                >
+                                  <a 
+                                    className="font-medium hover:underline" 
+                                    style={{ color: 'var(--color-secondary)' }}
+                                    href={`/community/${b.communityId}/post/${b.postId}`}
+                                  >
+                                    {b.title}
+                                  </a>
+                                  <div className="text-xs mt-1" style={{ color: 'var(--color-tertiary-light)' }}>
+                                    Saved {new Date(b.createdAt).toLocaleDateString()}
+                                  </div>
                                 </div>
                               ))}
                             </div>
                           ) : (
-                            <div className="text-slate-500">No bookmarked posts.</div>
+                            <div style={{ color: 'var(--color-tertiary-light)' }}>No bookmarked posts.</div>
                           )}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </>
-              )}
-
-              {/* Mentor Tabs */}
-              {userRole === 'mentor' && mentorProfile && (
-                <>
-                  {activeTab === "My Questions" && (
-                    <div>
-                      {mentorProfile.questions.length > 0 ? (
-                        <div className="space-y-4">
-                          {mentorProfile.questions.map((question) => (
-                            <div 
-                              key={question.id} 
-                              onClick={() => router.push(`/questions/${question.id}`)}
-                              className="border border-slate-200 rounded-lg p-4 hover:bg-slate-50 transition cursor-pointer"
-                            >
-                              <h4 className="font-semibold text-slate-800 mb-2 hover:text-emerald-600">{question.title}</h4>
-                              {question.description && (
-                                <p className="text-slate-600 text-sm mb-3">{question.description}</p>
-                              )}
-                              {question.tags && question.tags.length > 0 && (
-                                <div className="flex gap-2 mb-2">
-                                  {question.tags.map((tag) => (
-                                    <span
-                                      key={tag}
-                                      className="px-2 py-1 text-xs bg-emerald-100 text-emerald-700 rounded-full"
-                                    >
-                                      {tag}
-                                    </span>
-                                  ))}
-                                </div>
-                              )}
-                              <div className="text-xs text-slate-500">
-                                {new Date(question.createdAt).toLocaleDateString()}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="text-center py-12">
-                          <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <span className="text-2xl">❓</span>
-                          </div>
-                          <h3 className="text-xl font-semibold text-slate-700 mb-2">No questions yet</h3>
-                          <p className="text-slate-500 mb-6">Ask your first question to get started.</p>
-                          <Link href="/ask-question">
-                            <button className="px-6 py-3 bg-emerald-500 text-white font-medium rounded-lg hover:bg-emerald-600 transition">
-                              Ask Your First Question
-                            </button>
-                          </Link>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {activeTab === "My Answers" && (
-                    <div>
-                      {mentorProfile.answers.length > 0 ? (
-                        <div className="space-y-4">
-                          {mentorProfile.answers.map((answer) => (
-                            <div 
-                              key={answer.id} 
-                              onClick={() => router.push(`/questions/${answer.question.id}`)}
-                              className="border border-slate-200 rounded-lg p-4 hover:bg-slate-50 transition cursor-pointer"
-                            >
-                              <h4 className="font-semibold text-slate-800 mb-2 hover:text-emerald-600">
-                                Re: {answer.question.title}
-                              </h4>
-                              <p className="text-slate-600 text-sm mb-3 line-clamp-3">{answer.content}</p>
-                              <div className="text-xs text-slate-500">
-                                Answered on {new Date(answer.createdAt).toLocaleDateString()}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="text-center py-12">
-                          <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <span className="text-2xl">💬</span>
-                          </div>
-                          <h3 className="text-xl font-semibold text-slate-700 mb-2">No answers yet</h3>
-                          <p className="text-slate-500">Start helping others by answering questions.</p>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {activeTab === "Articles" && (
-                    <div>
-                      {mentorProfile.articles.length > 0 ? (
-                        <div className="space-y-4">
-                          {mentorProfile.articles.map((article) => (
-                            <div key={article.id} className="border border-slate-200 rounded-lg p-4 hover:bg-slate-50 transition">
-                              <h4 className="font-semibold text-slate-800 mb-2">{article.title}</h4>
-                              <p className="text-slate-600 text-sm mb-3 line-clamp-2">{article.content}</p>
-                              <div className="text-xs text-slate-500">
-                                Published on {new Date(article.createdAt).toLocaleDateString()}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="text-center py-12">
-                          <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <span className="text-2xl">📄</span>
-                          </div>
-                          <h3 className="text-xl font-semibold text-slate-700 mb-2">No articles yet</h3>
-                          <p className="text-slate-500 mb-6">Share your knowledge by writing your first article.</p>
-                          <Link href="/create-article">
-                            <button className="px-6 py-3 bg-emerald-500 text-white font-medium rounded-lg hover:bg-emerald-600 transition">
-                              Write Your First Article
-                            </button>
-                          </Link>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {activeTab === "Mentees" && (
-                    <div>
-                      {mentorProfile.connections.length > 0 ? (
-                        <div className="space-y-4">
-                          {mentorProfile.connections.map((connection) => (
-                            <div key={connection.id} className="border border-slate-200 rounded-lg p-4 hover:bg-slate-50 transition">
-                              <h4 className="font-semibold text-slate-800 mb-2">{connection.mentee.name}</h4>
-                              <p className="text-slate-500 text-sm">
-                                Connected on {new Date(connection.acceptedAt).toLocaleDateString()}
-                              </p>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="text-center py-12">
-                          <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <span className="text-2xl">👥</span>
-                          </div>
-                          <h3 className="text-xl font-semibold text-slate-700 mb-2">No mentees yet</h3>
-                          <p className="text-slate-500">Accept mentorship requests to start mentoring.</p>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {activeTab === "Requests" && (
-                    <div>
-                      {mentorProfile.mentorshipRequests.length > 0 ? (
-                        <div className="space-y-4">
-                          {mentorProfile.mentorshipRequests.map((request) => (
-                            <div key={request.id} className="border border-slate-200 rounded-lg p-4 hover:bg-slate-50 transition">
-                              <h4 className="font-semibold text-slate-800 mb-2">{request.mentee.name}</h4>
-                              {request.requestMessage && (
-                                <p className="text-slate-600 text-sm mb-3">{request.requestMessage}</p>
-                              )}
-                              <div className="flex items-center gap-2">
-                                <span className={`px-2 py-1 text-xs rounded-full ${
-                                  request.status === 'pending' 
-                                    ? 'bg-yellow-100 text-yellow-700' 
-                                    : request.status === 'accepted'
-                                    ? 'bg-green-100 text-green-700'
-                                    : 'bg-red-100 text-red-700'
-                                }`}>
-                                  {request.status}
-                                </span>
-                                <span className="text-xs text-slate-500">
-                                  {new Date(request.createdAt).toLocaleDateString()}
-                                </span>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="text-center py-12">
-                          <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <span className="text-2xl">📨</span>
-                          </div>
-                          <h3 className="text-xl font-semibold text-slate-700 mb-2">No requests yet</h3>
-                          <p className="text-slate-500">Mentorship requests will appear here.</p>
                         </div>
                       )}
                     </div>
@@ -698,18 +693,26 @@ export default function ProfilePage() {
         {/* Right Sidebar */}
         <aside className="w-80 flex flex-col gap-6">
           {/* Personal Details */}
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-            <h3 className="text-lg font-semibold text-slate-800 mb-4">Personal Details</h3>
+          <div 
+            className="rounded-2xl shadow-lg p-6 animate-fadeIn"
+            style={{
+              backgroundColor: 'var(--color-neutral)',
+              borderWidth: '1px',
+              borderStyle: 'solid',
+              borderColor: 'var(--color-surface-dark)'
+            }}
+          >
+            <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--color-tertiary)' }}>📋 Personal Details</h3>
             
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-600 mb-1">Email</label>
-                <p className="text-slate-800">{profile.email}</p>
+                <label className="block text-sm font-medium mb-1" style={{ color: 'var(--color-tertiary-light)' }}>Email</label>
+                <p style={{ color: 'var(--color-tertiary)' }}>{profile.email}</p>
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-slate-600 mb-1">Joined</label>
-                <p className="text-slate-800">{new Date(profile.joinedDate).toLocaleDateString('en-US', { 
+                <label className="block text-sm font-medium mb-1" style={{ color: 'var(--color-tertiary-light)' }}>Joined</label>
+                <p style={{ color: 'var(--color-tertiary)' }}>{new Date(profile.joinedDate).toLocaleDateString('en-US', { 
                   year: 'numeric', 
                   month: 'long', 
                   day: 'numeric' 
@@ -717,15 +720,24 @@ export default function ProfilePage() {
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-slate-600 mb-1">Reputation</label>
-                <p className="text-slate-800">{profile.reputation}</p>
+                <label className="block text-sm font-medium mb-1" style={{ color: 'var(--color-tertiary-light)' }}>Reputation</label>
+                <p style={{ color: 'var(--color-tertiary)' }}>{profile.reputation}</p>
               </div>
             </div>
           </div>
 
           {/* Skills/Knows About */}
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-            <h3 className="text-lg font-semibold text-slate-800 mb-4">Knows about</h3>
+          <div 
+            className="rounded-2xl shadow-lg p-6 animate-fadeIn"
+            style={{
+              backgroundColor: 'var(--color-neutral)',
+              borderWidth: '1px',
+              borderStyle: 'solid',
+              borderColor: 'var(--color-surface-dark)',
+              animationDelay: '0.1s'
+            }}
+          >
+            <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--color-tertiary)' }}>🎯 Knows about</h3>
             
             {isEditing ? (
               <div className="space-y-2">
@@ -745,7 +757,14 @@ export default function ProfilePage() {
                           setMentorProfile({...mentorProfile, skills: newSkills});
                         }
                       }}
-                      className="flex-1 p-2 border border-slate-300 rounded-lg"
+                      className="flex-1 p-2 rounded-lg transition-all duration-300 focus:ring-2 focus:outline-none"
+                      style={{
+                        backgroundColor: 'var(--color-surface)',
+                        borderWidth: '1px',
+                        borderStyle: 'solid',
+                        borderColor: 'var(--color-surface-dark)',
+                        color: 'var(--color-tertiary)'
+                      }}
                       placeholder="Enter skill"
                       aria-label={`Skill ${index + 1}`}
                     />
@@ -759,7 +778,8 @@ export default function ProfilePage() {
                           setMentorProfile({...mentorProfile, skills: newSkills});
                         }
                       }}
-                      className="text-red-500 hover:text-red-700"
+                      className="transition-all duration-300 hover:scale-110"
+                      style={{ color: 'var(--color-tertiary-light)' }}
                     >
                       ×
                     </button>
@@ -773,7 +793,11 @@ export default function ProfilePage() {
                       setMentorProfile({...mentorProfile, skills: [...mentorProfile.skills, ""]});
                     }
                   }}
-                  className="w-full p-2 border border-dashed border-slate-300 rounded-lg text-slate-500 hover:border-slate-400"
+                  className="w-full p-2 rounded-lg border border-dashed transition-all duration-300 hover:scale-105"
+                  style={{
+                    borderColor: 'var(--color-surface-dark)',
+                    color: 'var(--color-tertiary-light)'
+                  }}
                 >
                   + Add Skill
                 </button>
@@ -781,9 +805,21 @@ export default function ProfilePage() {
             ) : (
               <div className="space-y-2">
                 {((userRole === 'mentee' ? menteeProfile?.skills : mentorProfile?.skills) || []).map((skill, index) => (
-                  <div key={index} className="w-full h-6 bg-slate-200 rounded-full">
-                    <div className="h-full bg-gradient-to-r from-emerald-400 to-emerald-500 rounded-full flex items-center px-3">
-                      <span className="text-xs text-white font-medium">{skill}</span>
+                  <div 
+                    key={index} 
+                    className="w-full h-6 rounded-full animate-fadeInUp"
+                    style={{ 
+                      backgroundColor: 'var(--color-surface)',
+                      animationDelay: `${index * 0.05}s`
+                    }}
+                  >
+                    <div 
+                      className="h-full rounded-full flex items-center px-3"
+                      style={{
+                        background: 'linear-gradient(to right, var(--color-primary), var(--color-secondary))'
+                      }}
+                    >
+                      <span className="text-xs font-medium" style={{ color: 'var(--color-neutral)' }}>{skill}</span>
                     </div>
                   </div>
                 ))}
@@ -792,42 +828,51 @@ export default function ProfilePage() {
           </div>
 
           {/* Stats */}
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-            <h3 className="text-lg font-semibold text-slate-800 mb-4">Activity</h3>
+          <div 
+            className="rounded-2xl shadow-lg p-6 animate-fadeIn"
+            style={{
+              backgroundColor: 'var(--color-neutral)',
+              borderWidth: '1px',
+              borderStyle: 'solid',
+              borderColor: 'var(--color-surface-dark)',
+              animationDelay: '0.2s'
+            }}
+          >
+            <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--color-tertiary)' }}>📊 Activity</h3>
             
             <div className="space-y-4">
               {userRole === 'mentee' && menteeProfile ? (
                 <>
                   <div className="flex justify-between">
-                    <span className="text-slate-600">Questions Asked</span>
-                    <span className="font-semibold text-slate-800">{menteeProfile.stats.questionsAsked}</span>
+                    <span style={{ color: 'var(--color-tertiary-light)' }}>Questions Asked</span>
+                    <span className="font-semibold" style={{ color: 'var(--color-tertiary)' }}>{menteeProfile.stats.questionsAsked}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-slate-600">Bookmarks</span>
-                    <span className="font-semibold text-slate-800">{menteeProfile.stats.bookmarksCount}</span>
+                    <span style={{ color: 'var(--color-tertiary-light)' }}>Bookmarks</span>
+                    <span className="font-semibold" style={{ color: 'var(--color-tertiary)' }}>{menteeProfile.stats.bookmarksCount}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-slate-600">Mentorship Requests</span>
-                    <span className="font-semibold text-slate-800">{menteeProfile.stats.mentorshipRequestsCount}</span>
+                    <span style={{ color: 'var(--color-tertiary-light)' }}>Mentorship Requests</span>
+                    <span className="font-semibold" style={{ color: 'var(--color-tertiary)' }}>{menteeProfile.stats.mentorshipRequestsCount}</span>
                   </div>
                 </>
               ) : userRole === 'mentor' && mentorProfile ? (
                 <>
                   <div className="flex justify-between">
-                    <span className="text-slate-600">Answers Provided</span>
-                    <span className="font-semibold text-slate-800">{mentorProfile.stats.answersProvided}</span>
+                    <span style={{ color: 'var(--color-tertiary-light)' }}>Answers Provided</span>
+                    <span className="font-semibold" style={{ color: 'var(--color-tertiary)' }}>{mentorProfile.stats.answersProvided}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-slate-600">Articles Written</span>
-                    <span className="font-semibold text-slate-800">{mentorProfile.stats.articlesWritten}</span>
+                    <span style={{ color: 'var(--color-tertiary-light)' }}>Articles Written</span>
+                    <span className="font-semibold" style={{ color: 'var(--color-tertiary)' }}>{mentorProfile.stats.articlesWritten}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-slate-600">Mentees Connected</span>
-                    <span className="font-semibold text-slate-800">{mentorProfile.stats.menteesConnected}</span>
+                    <span style={{ color: 'var(--color-tertiary-light)' }}>Mentees Connected</span>
+                    <span className="font-semibold" style={{ color: 'var(--color-tertiary)' }}>{mentorProfile.stats.menteesConnected}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-slate-600">Requests Received</span>
-                    <span className="font-semibold text-slate-800">{mentorProfile.stats.mentorshipRequests}</span>
+                    <span style={{ color: 'var(--color-tertiary-light)' }}>Requests Received</span>
+                    <span className="font-semibold" style={{ color: 'var(--color-tertiary)' }}>{mentorProfile.stats.mentorshipRequests}</span>
                   </div>
                 </>
               ) : null}

@@ -469,7 +469,7 @@ export default function AdminArticlesPage() {
                     {/* Ambient gradient backdrop */}
                     <div className="absolute inset-0 bg-gradient-to-br from-emerald-950/90 via-slate-900/85 to-cyan-900/90 backdrop-blur-sm" />
                     {/* Gradient frame */}
-                    <div className="relative w-full max-w-5xl max-h-[92vh] flex flex-col rounded-2xl border border-emerald-300/60 bg-gradient-to-br from-white/92 to-white/82 backdrop-blur-xl shadow-2xl overflow-hidden">
+                    <div className="relative w-full max-w-5xl max-h-[92vh] flex flex-col rounded-2xl border border-emerald-300/60 bg-white backdrop-blur-xl shadow-2xl overflow-hidden">
                         {/* Header */}
                         <div className="px-6 py-5 border-b border-emerald-200/60 flex items-center justify-between bg-white/10 backdrop-blur-md">
                             <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
