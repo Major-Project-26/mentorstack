@@ -49,35 +49,37 @@ function ModalShell({ isOpen, onClose, title, icon, children }: Readonly<{ isOpe
               leaveFrom="opacity-100 scale-100"
               leaveTo="opacity-0 scale-95"
             >
-              <DialogPanel className="w-full max-w-5xl transform overflow-hidden rounded-2xl bg-gradient-to-br from-white/90 to-white/80 dark:from-slate-800/80 dark:to-slate-700/80 backdrop-blur-xl border border-emerald-200/40 shadow-[0_8px_40px_-8px_rgba(0,0,0,0.3)] transition-all">
-                {/* Header */}
-                <div className="relative px-8 pt-6 pb-5">
-                  <div className="absolute inset-0 opacity-[0.15] pointer-events-none bg-[radial-gradient(circle_at_top_left,theme(colors.emerald.300),transparent_60%)]" />
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="flex items-center justify-center w-11 h-11 rounded-xl bg-gradient-to-tr from-emerald-500 to-cyan-500 shadow-inner">
-                        {Icon ? <Icon className="w-6 h-6 text-white" /> : null}
+              <DialogPanel className="w-full max-w-5xl transform overflow-hidden rounded-2xl p-[1px] bg-gradient-to-br from-emerald-300/60 via-cyan-300/50 to-emerald-300/60 shadow-[0_30px_80px_-20px_rgba(6,182,212,0.45)] transition-all">
+                <div className="rounded-2xl bg-gradient-to-br from-white/92 to-white/82 dark:from-slate-800/80 dark:to-slate-700/80 backdrop-blur-xl border border-emerald-300/60">
+                  {/* Header */}
+                  <div className="relative px-8 pt-6 pb-5">
+                    <div className="absolute inset-0 opacity-[0.15] pointer-events-none bg-[radial-gradient(circle_at_top_left,theme(colors.emerald.300),transparent_60%)]" />
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center justify-center w-11 h-11 rounded-xl bg-gradient-to-tr from-emerald-500 to-cyan-500 shadow-inner">
+                          {Icon ? <Icon className="w-6 h-6 text-white" /> : null}
+                        </div>
+                        <DialogTitle as="h3" className="text-2xl font-semibold tracking-tight text-black dark:text-white">
+                          {title}
+                        </DialogTitle>
                       </div>
-                      <DialogTitle as="h3" className="text-2xl font-semibold tracking-tight bg-gradient-to-r from-emerald-700 to-cyan-600 bg-clip-text text-transparent">
-                        {title}
-                      </DialogTitle>
+                      <button
+                        onClick={onClose}
+                        className="group relative inline-flex items-center justify-center rounded-lg p-2 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/70"
+                        aria-label="Close modal"
+                      >
+                        <X className="w-5 h-5 text-emerald-600 group-hover:text-emerald-700" />
+                        <span className="absolute -inset-2 rounded-lg bg-emerald-500/10 opacity-0 group-hover:opacity-100 transition" />
+                      </button>
                     </div>
-                    <button
-                      onClick={onClose}
-                      className="group relative inline-flex items-center justify-center rounded-lg p-2 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/70"
-                      aria-label="Close modal"
-                    >
-                      <X className="w-5 h-5 text-emerald-600 group-hover:text-emerald-700" />
-                      <span className="absolute -inset-2 rounded-lg bg-emerald-500/10 opacity-0 group-hover:opacity-100 transition" />
-                    </button>
+                    {/* Decorative divider */}
+                    <div className="mt-6 h-px w-full bg-gradient-to-r from-transparent via-emerald-200 to-transparent" />
                   </div>
-                  {/* Decorative divider */}
-                  <div className="mt-6 h-px w-full bg-gradient-to-r from-transparent via-emerald-200 to-transparent" />
-                </div>
 
-                <div className="px-8 pb-8">
-                  <div className="max-h-[60vh] overflow-y-auto pr-2 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-emerald-300/40 hover:scrollbar-thumb-emerald-400/60">
-                    {children}
+                  <div className="px-8 pb-8">
+                    <div className="max-h-[60vh] overflow-y-auto pr-2 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-emerald-300/40 hover:scrollbar-thumb-emerald-400/60">
+                      {children}
+                    </div>
                   </div>
                 </div>
               </DialogPanel>

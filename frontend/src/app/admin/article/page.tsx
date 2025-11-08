@@ -9,7 +9,6 @@ import {
     FileText,
     Search,
     Eye,
-    Edit,
     Trash2,
     ThumbsUp,
     ThumbsDown,
@@ -20,8 +19,7 @@ import {
     Bookmark,
     TrendingUp,
     Filter,
-    X,
-    ExternalLink
+    X
 } from 'lucide-react';
 
 // Extended Article interface with additional fields
@@ -64,7 +62,7 @@ export default function AdminArticlesPage() {
             if (!adminAPI.isAuthenticated()) {
                 router.push('/admin/login');
             }
-        } catch (error) {
+        } catch {
             router.push('/admin/login');
         }
     };
@@ -330,14 +328,17 @@ export default function AdminArticlesPage() {
                             <div key={article.id} className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 hover:shadow-lg hover:border-teal-300 transition-all duration-300">
                                 <div className="flex gap-6">
                                     {/* Article Thumbnail - Image or Gradient with Icon */}
-                                    <div
+                                    <button
+                                        type="button"
+                                        aria-label="Preview first image"
                                         onClick={() => {
                                             if (article.imageUrls && article.imageUrls.length > 0) {
                                                 setPreviewImage(article.imageUrls[0]);
                                             }
                                         }}
-                                        className={`w-48 h-32 rounded-lg flex-shrink-0 overflow-hidden relative group shadow-md hover:shadow-xl transition-all duration-300 ${
-                                            article.imageUrls && article.imageUrls.length > 0 ? 'cursor-pointer' : 'cursor-default bg-gradient-to-br from-teal-100 to-emerald-100'
+                                        disabled={!(article.imageUrls && article.imageUrls.length > 0)}
+                                        className={`w-48 h-32 rounded-lg flex-shrink-0 overflow-hidden relative group shadow-md hover:shadow-xl transition-all duration-300 text-left ${
+                                            article.imageUrls && article.imageUrls.length > 0 ? 'cursor-pointer' : 'cursor-not-allowed bg-gradient-to-br from-teal-100 to-emerald-100'
                                         }`}
                                     >
                                         {article.imageUrls && article.imageUrls.length > 0 ? (
@@ -359,7 +360,7 @@ export default function AdminArticlesPage() {
                                                 <FileText className="w-16 h-16 text-teal-600" />
                                             </div>
                                         )}
-                                    </div>
+                                    </button>
 
                                     {/* Article Content */}
                                     <div className="flex-1 min-w-0">
@@ -391,9 +392,9 @@ export default function AdminArticlesPage() {
                                             <div className="flex items-center gap-2 mb-3">
                                                 <Tag className="w-4 h-4 text-slate-400" />
                                                 <div className="flex flex-wrap gap-2">
-                                                    {article.tags.slice(0, 4).map((tagItem, idx) => (
+                                                    {article.tags.slice(0, 4).map((tagItem) => (
                                                         <span
-                                                            key={idx}
+                                                            key={tagItem.tag.id}
                                                             className="px-2 py-1 bg-slate-100 text-slate-700 text-xs rounded-lg"
                                                         >
                                                             {tagItem.tag.name}
@@ -464,37 +465,38 @@ export default function AdminArticlesPage() {
 
             {/* Article Detail Modal */}
             {showDetailModal && selectedArticle && (
-                <div className="fixed inset-0 backdrop-blur-xs bg-white/30 flex items-center justify-center p-4 z-50">
-                    <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
-                        {/* Modal Header */}
-                        <div className="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between flex-shrink-0">
-                            <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-                                <FileText className="w-6 h-6 text-teal-600" />
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    {/* Ambient gradient backdrop */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-emerald-950/90 via-slate-900/85 to-cyan-900/90 backdrop-blur-sm" />
+                    {/* Gradient frame */}
+                    <div className="relative w-full max-w-5xl max-h-[92vh] flex flex-col rounded-2xl border border-emerald-300/60 bg-gradient-to-br from-white/92 to-white/82 backdrop-blur-xl shadow-2xl overflow-hidden">
+                        {/* Header */}
+                        <div className="px-6 py-5 border-b border-emerald-200/60 flex items-center justify-between bg-white/10 backdrop-blur-md">
+                            <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
+                                <FileText className="w-6 h-6 text-emerald-600" />
                                 Article Details
                             </h2>
                             <button
                                 onClick={() => setShowDetailModal(false)}
-                                className="p-2 hover:bg-slate-100 rounded-lg transition"
+                                className="p-2 rounded-lg hover:bg-white/30 transition-colors"
                             >
-                                <X className="w-6 h-6 text-slate-600" />
+                                <X className="w-6 h-6 text-slate-700" />
                             </button>
                         </div>
 
-                        {/* Modal Content - Scrollable */}
-                        <div className="overflow-y-auto flex-1">
-                            <div className="p-6 space-y-6">
-                                {/* Article Title */}
-                                <div>
-                                    <h3 className="text-3xl font-bold text-slate-800 mb-4">{selectedArticle.title}</h3>
-                                    <div className="flex items-center gap-4 text-sm text-slate-600">
-                                        <div className="flex items-center gap-2">
+                        {/* Scrollable body */}
+                        <div className="flex-1 overflow-y-auto custom-scrollbar">
+                            <div className="p-6 space-y-8">
+                                {/* Title / primary meta */}
+                                <div className="space-y-4">
+                                    <h3 className="text-3xl font-extrabold text-slate-900 leading-tight tracking-tight">{selectedArticle.title}</h3>
+                                    <div className="flex flex-wrap items-center gap-4 text-sm">
+                                        <div className="flex items-center gap-2 text-slate-700">
                                             <User className="w-4 h-4" />
                                             <span className="font-medium">{selectedArticle.author?.name || 'Unknown'}</span>
                                         </div>
-                                        <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getRoleBadgeColor(selectedArticle.authorRole || selectedArticle.author?.role || 'mentee')}`}>
-                                            {(selectedArticle.authorRole || selectedArticle.author?.role || 'mentee').charAt(0).toUpperCase() + (selectedArticle.authorRole || selectedArticle.author?.role || 'mentee').slice(1)}
-                                        </span>
-                                        <div className="flex items-center gap-1">
+                                        <span className={`px-3 py-1 rounded-full text-xs font-semibold shadow-sm ${getRoleBadgeColor(selectedArticle.authorRole || selectedArticle.author?.role || 'mentee')}`}>{(selectedArticle.authorRole || selectedArticle.author?.role || 'mentee').charAt(0).toUpperCase() + (selectedArticle.authorRole || selectedArticle.author?.role || 'mentee').slice(1)}</span>
+                                        <div className="flex items-center gap-1 text-slate-600">
                                             <Calendar className="w-4 h-4" />
                                             <span>Published {formatDate(selectedArticle.createdAt)}</span>
                                         </div>
@@ -502,45 +504,37 @@ export default function AdminArticlesPage() {
                                 </div>
 
                                 {/* Images Gallery */}
-                                {((selectedArticle.imageUrls && selectedArticle.imageUrls.length > 0) || true) && (
-                                    <div>
-                                        <h4 className="text-lg font-bold text-slate-800 mb-3 flex items-center gap-2">
-                                            <ImageIcon className="w-5 h-5 text-teal-600" />
+                                {(selectedArticle.imageUrls && selectedArticle.imageUrls.length > 0) && (
+                                    <div className="space-y-4">
+                                        <h4 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                                            <ImageIcon className="w-5 h-5 text-emerald-600" />
                                             Article Images ({selectedArticle.imageUrls?.length || 3})
                                         </h4>
                                         <div className="grid grid-cols-2 gap-4">
-                                            {(selectedArticle.imageUrls && selectedArticle.imageUrls.length > 0
-                                                ? selectedArticle.imageUrls
-                                                : [
-                                                    'https://images.unsplash.com/photo-1499750310107-5fef28a66643?w=800',
-                                                ]
-                                            ).map((url, idx) => (
-                                                <div
-                                                    key={idx}
+                                            {selectedArticle.imageUrls.map((url) => (
+                                                <button
+                                                    key={url}
+                                                    type="button"
                                                     onClick={() => setPreviewImage(url)}
-                                                    className="rounded-lg overflow-hidden bg-slate-100 cursor-pointer relative group shadow-md hover:shadow-xl transition-all duration-300"
+                                                    className="relative group rounded-lg overflow-hidden bg-slate-100 shadow-md hover:shadow-xl transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                                                 >
-                                                    <img
-                                                        src={url}
-                                                        alt={`Article image ${idx + 1}`}
-                                                        className="w-full h-48 object-cover transition-transform duration-300 group-hover:scale-110"
-                                                    />
-                                                    <div className="absolute inset-0 group-hover:bg-opacity-50 transition-all duration-300 flex items-center justify-center">
-                                                        <div className="transform scale-0 group-hover:scale-100 transition-transform duration-300">
-                                                            <Eye className="w-10 h-10 text-white" />
+                                                    <img src={url} alt="" className="w-full h-48 object-cover transition-transform duration-300 group-hover:scale-110" />
+                                                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-black/40 transition-opacity duration-300">
+                                                        <div className="text-center transform scale-75 group-hover:scale-100 transition-transform duration-300">
+                                                            <Eye className="w-10 h-10 text-white mx-auto" />
                                                             <p className="text-white text-sm font-semibold mt-2">Click to preview</p>
                                                         </div>
                                                     </div>
-                                                </div>
+                                                </button>
                                             ))}
                                         </div>
                                     </div>
                                 )}
 
                                 {/* Content */}
-                                <div>
-                                    <h4 className="text-lg font-bold text-slate-800 mb-3">Content</h4>
-                                    <div className="bg-slate-50 rounded-lg p-4">
+                                <div className="space-y-4">
+                                    <h4 className="text-lg font-bold text-slate-900">Content</h4>
+                                    <div className="rounded-xl border border-emerald-100 bg-emerald-50/60 p-5">
                                         <p className="text-slate-700 whitespace-pre-wrap leading-relaxed">
                                             {selectedArticle.content}
                                         </p>
@@ -549,17 +543,14 @@ export default function AdminArticlesPage() {
 
                                 {/* Tags */}
                                 {selectedArticle.tags && selectedArticle.tags.length > 0 && (
-                                    <div>
-                                        <h4 className="text-lg font-bold text-slate-800 mb-3 flex items-center gap-2">
-                                            <Tag className="w-5 h-5 text-teal-600" />
+                                    <div className="space-y-3">
+                                        <h4 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                                            <Tag className="w-5 h-5 text-emerald-600" />
                                             Tags
                                         </h4>
                                         <div className="flex flex-wrap gap-2">
-                                            {selectedArticle.tags.map((tagItem, idx) => (
-                                                <span
-                                                    key={idx}
-                                                    className="px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded-lg font-medium text-sm"
-                                                >
+                                            {selectedArticle.tags.map((tagItem) => (
+                                                <span key={tagItem.tag.id} className="px-3 py-1.5 rounded-lg text-sm font-medium bg-emerald-100 text-emerald-800">
                                                     {tagItem.tag.name}
                                                 </span>
                                             ))}
@@ -568,42 +559,42 @@ export default function AdminArticlesPage() {
                                 )}
 
                                 {/* Statistics */}
-                                <div>
-                                    <h4 className="text-lg font-bold text-slate-800 mb-3">Engagement Statistics</h4>
-                                    <div className="grid grid-cols-4 gap-4">
-                                        <div className="bg-green-50 rounded-lg p-4 text-center">
+                                <div className="space-y-4">
+                                    <h4 className="text-lg font-bold text-slate-900">Engagement Statistics</h4>
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                        <div className="rounded-lg p-4 text-center bg-green-50 border border-green-200">
                                             <ThumbsUp className="w-6 h-6 text-green-600 mx-auto mb-2" />
                                             <p className="text-2xl font-bold text-green-700">{selectedArticle.upvotes}</p>
-                                            <p className="text-sm text-green-600">Upvotes</p>
+                                            <p className="text-xs font-medium text-green-600">Upvotes</p>
                                         </div>
-                                        <div className="bg-red-50 rounded-lg p-4 text-center">
+                                        <div className="rounded-lg p-4 text-center bg-red-50 border border-red-200">
                                             <ThumbsDown className="w-6 h-6 text-red-600 mx-auto mb-2" />
                                             <p className="text-2xl font-bold text-red-700">{selectedArticle.downvotes}</p>
-                                            <p className="text-sm text-red-600">Downvotes</p>
+                                            <p className="text-xs font-medium text-red-600">Downvotes</p>
                                         </div>
-                                        <div className="bg-blue-50 rounded-lg p-4 text-center">
+                                        <div className="rounded-lg p-4 text-center bg-blue-50 border border-blue-200">
                                             <TrendingUp className="w-6 h-6 text-blue-600 mx-auto mb-2" />
                                             <p className="text-2xl font-bold text-blue-700">{(selectedArticle.upvotes || 0) + (selectedArticle.downvotes || 0)}</p>
-                                            <p className="text-sm text-blue-600">Total Votes</p>
+                                            <p className="text-xs font-medium text-blue-600">Total Votes</p>
                                         </div>
-                                        <div className="bg-purple-50 rounded-lg p-4 text-center">
+                                        <div className="rounded-lg p-4 text-center bg-purple-50 border border-purple-200">
                                             <Bookmark className="w-6 h-6 text-purple-600 mx-auto mb-2" />
                                             <p className="text-2xl font-bold text-purple-700">{selectedArticle._count?.bookmarks || 0}</p>
-                                            <p className="text-sm text-purple-600">Bookmarks</p>
+                                            <p className="text-xs font-medium text-purple-600">Bookmarks</p>
                                         </div>
                                     </div>
                                 </div>
 
                                 {/* Author Details */}
                                 {selectedArticle.author && (
-                                    <div className="bg-slate-50 rounded-lg p-4">
-                                        <h4 className="text-lg font-bold text-slate-800 mb-3">Author Information</h4>
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white text-lg font-bold">
+                                    <div className="space-y-4">
+                                        <h4 className="text-lg font-bold text-slate-900">Author Information</h4>
+                                        <div className="flex items-center gap-4 p-4 rounded-xl bg-white/70 border border-emerald-100">
+                                            <div className="w-14 h-14 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white text-xl font-bold shadow-md">
                                                 {selectedArticle.author.name.charAt(0).toUpperCase()}
                                             </div>
-                                            <div>
-                                                <p className="font-semibold text-slate-800">{selectedArticle.author.name}</p>
+                                            <div className="space-y-1">
+                                                <p className="font-semibold text-slate-900">{selectedArticle.author.name}</p>
                                                 <p className="text-sm text-slate-600">{selectedArticle.author.email}</p>
                                             </div>
                                         </div>
@@ -611,20 +602,21 @@ export default function AdminArticlesPage() {
                                 )}
 
                                 {/* Metadata */}
-                                <div className="bg-slate-50 rounded-lg p-4 text-sm text-slate-600">
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <span className="font-medium">Article ID:</span> {selectedArticle.id}
+                                <div className="space-y-4">
+                                    <h4 className="text-lg font-bold text-slate-900">Metadata</h4>
+                                    <div className="grid grid-cols-2 gap-4 text-sm">
+                                        <div className="p-3 rounded-lg bg-white/60 border border-emerald-100">
+                                            <span className="font-medium text-slate-700">Article ID:</span> {selectedArticle.id}
                                         </div>
-                                        <div>
-                                            <span className="font-medium">Author ID:</span> {selectedArticle.author?.id || 'N/A'}
+                                        <div className="p-3 rounded-lg bg-white/60 border border-emerald-100">
+                                            <span className="font-medium text-slate-700">Author ID:</span> {selectedArticle.author?.id || 'N/A'}
                                         </div>
-                                        <div>
-                                            <span className="font-medium">Created:</span> {new Date(selectedArticle.createdAt).toLocaleString()}
+                                        <div className="p-3 rounded-lg bg-white/60 border border-emerald-100">
+                                            <span className="font-medium text-slate-700">Created:</span> {new Date(selectedArticle.createdAt).toLocaleString()}
                                         </div>
                                         {selectedArticle.updatedAt && (
-                                            <div>
-                                                <span className="font-medium">Updated:</span> {new Date(selectedArticle.updatedAt).toLocaleString()}
+                                            <div className="p-3 rounded-lg bg-white/60 border border-emerald-100">
+                                                <span className="font-medium text-slate-700">Updated:</span> {new Date(selectedArticle.updatedAt).toLocaleString()}
                                             </div>
                                         )}
                                     </div>
@@ -632,20 +624,17 @@ export default function AdminArticlesPage() {
                             </div>
                         </div>
 
-                        {/* Modal Footer */}
-                        <div className="bg-slate-50 border-t border-slate-200 px-6 py-4 flex items-center justify-end gap-3 flex-shrink-0">
+                        {/* Footer */}
+                        <div className="px-6 py-5 border-t border-emerald-200/60 flex items-center justify-end gap-3 bg-white/20 backdrop-blur-md">
                             <button
                                 onClick={() => setShowDetailModal(false)}
-                                className="px-6 py-2.5 bg-white border-2 border-slate-200 text-slate-700 rounded-lg font-semibold hover:bg-slate-50 transition"
+                                className="px-6 py-2.5 rounded-lg font-semibold border-2 border-slate-300 bg-white/60 text-slate-700 hover:bg-white hover:border-slate-400 transition shadow-sm"
                             >
                                 Close
                             </button>
                             <button
-                                onClick={() => {
-                                    setShowDetailModal(false);
-                                    handleDeleteClick(selectedArticle);
-                                }}
-                                className="px-6 py-2.5 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg font-semibold hover:from-red-600 hover:to-red-700 transition shadow-md flex items-center gap-2"
+                                onClick={() => { setShowDetailModal(false); handleDeleteClick(selectedArticle); }}
+                                className="px-6 py-2.5 rounded-lg font-semibold bg-gradient-to-r from-red-500 to-red-600 text-white shadow-md hover:from-red-600 hover:to-red-700 transition flex items-center gap-2"
                             >
                                 <Trash2 className="w-4 h-4" />
                                 Delete Article
@@ -657,30 +646,28 @@ export default function AdminArticlesPage() {
 
             {/* Delete Confirmation Modal */}
             {showDeleteConfirm && articleToDelete && (
-                <div className="fixed inset-0 backdrop-blur-sm bg-white/30 flex items-center justify-center p-4 z-50">
-                    <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-gradient-to-br from-emerald-950/90 via-slate-900/85 to-cyan-900/90 backdrop-blur-sm" />
+                    <div className="relative w-full max-w-md rounded-2xl border border-emerald-300/60 bg-gradient-to-br from-white/92 to-white/82 backdrop-blur-xl shadow-2xl p-6">
                         <div className="text-center mb-6">
-                            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4 shadow-inner">
                                 <Trash2 className="w-8 h-8 text-red-600" />
                             </div>
-                            <h3 className="text-xl font-bold text-slate-800 mb-2">Delete Article?</h3>
-                            <p className="text-slate-600">
+                            <h3 className="text-xl font-bold text-slate-900 mb-2">Delete Article?</h3>
+                            <p className="text-slate-700">
                                 Are you sure you want to delete "{articleToDelete.title}"? This action cannot be undone.
                             </p>
                         </div>
                         <div className="flex gap-3">
                             <button
-                                onClick={() => {
-                                    setShowDeleteConfirm(false);
-                                    setArticleToDelete(null);
-                                }}
-                                className="flex-1 px-4 py-2.5 bg-slate-100 text-slate-700 rounded-lg font-semibold hover:bg-slate-200 transition"
+                                onClick={() => { setShowDeleteConfirm(false); setArticleToDelete(null); }}
+                                className="flex-1 px-4 py-2.5 rounded-lg font-semibold border-2 border-slate-300 bg-white/70 text-slate-700 hover:bg-white hover:border-slate-400 transition"
                             >
                                 Cancel
                             </button>
                             <button
                                 onClick={handleDeleteConfirm}
-                                className="flex-1 px-4 py-2.5 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg font-semibold hover:from-red-600 hover:to-red-700 transition shadow-md"
+                                className="flex-1 px-4 py-2.5 rounded-lg font-semibold bg-gradient-to-r from-red-500 to-red-600 text-white shadow-md hover:from-red-600 hover:to-red-700 transition"
                             >
                                 Delete
                             </button>

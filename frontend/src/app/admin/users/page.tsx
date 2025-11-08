@@ -571,11 +571,15 @@ export default function AdminUsersPage() {
 
                 {/* User Detail/Edit Modal */}
                 {showModal && selectedUser && (
-                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-                        <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                        {/* Ambient gradient backdrop to match content page */}
+                        <div className="absolute inset-0 bg-gradient-to-br from-emerald-950/90 via-slate-900/85 to-cyan-900/90 backdrop-blur-sm" />
+                        {/* Gradient border frame */}
+                        <div className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-2xl p-[1px] bg-gradient-to-br from-emerald-300/60 via-cyan-300/50 to-emerald-300/60 shadow-[0_30px_80px_-20px_rgba(6,182,212,0.45)]">
+                            <div className="rounded-2xl bg-gradient-to-br from-white/92 to-white/82 backdrop-blur-xl border border-emerald-300/60">
                             {/* Modal Header */}
-                            <div className="sticky top-0 bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between">
-                                <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
+                            <div className="px-8 pt-6 pb-5 border-b border-emerald-200/60 flex items-center justify-between">
+                                <h2 className="text-2xl font-semibold tracking-tight text-black dark:text-white flex items-center gap-2">
                                     {isEditing ? (
                                         <>
                                             <Edit className="w-6 h-6 text-emerald-600" />
@@ -590,14 +594,15 @@ export default function AdminUsersPage() {
                                 </h2>
                                 <button
                                     onClick={handleCloseModal}
-                                    className="p-2 hover:bg-slate-100 rounded-lg transition"
+                                    className="rounded-lg p-2 text-emerald-600 hover:text-emerald-700"
+                                    aria-label="Close user modal"
                                 >
-                                    <XCircle className="w-6 h-6 text-slate-600" />
+                                    <XCircle className="w-6 h-6" />
                                 </button>
                             </div>
 
                             {/* Modal Content */}
-                            <div className="p-6 space-y-6">
+                            <div className="px-8 py-6 space-y-6">
                                 {/* Profile Header */}
                                 <div className="flex items-start gap-6 pb-6 border-b border-slate-200">
                                     <div className="w-24 h-24 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white text-3xl font-bold shadow-lg">
@@ -786,21 +791,22 @@ export default function AdminUsersPage() {
                             </div>
 
                             {/* Modal Footer */}
-                            <div className="sticky bottom-0 bg-slate-50 border-t border-slate-200 px-6 py-4 flex items-center justify-end gap-3">
+                            <div className="flex justify-end gap-3 pt-4 border-t border-emerald-200/60">
                                 <button
                                     onClick={handleCloseModal}
-                                    className="px-6 py-2.5 bg-white border-2 border-slate-200 text-slate-700 rounded-lg font-semibold hover:bg-slate-50 transition"
+                                    className="px-6 py-2.5 bg-white/75 border border-emerald-300/60 text-emerald-700 rounded-lg font-medium text-sm hover:bg-emerald-50/80 transition"
                                 >
-                                    Cancel
+                                    Close
                                 </button>
                                 {isEditing && (
                                     <button
                                         onClick={handleSaveUser}
-                                        className="px-6 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-lg font-semibold hover:from-emerald-600 hover:to-teal-700 transition shadow-md"
+                                        className="px-6 py-2.5 rounded-lg text-sm font-medium bg-gradient-to-r from-emerald-500 to-cyan-500 text-white hover:from-emerald-600 hover:to-cyan-600 shadow-[0_8px_24px_-8px_rgba(6,182,212,0.4)]"
                                     >
                                         Save Changes
                                     </button>
                                 )}
+                            </div>
                             </div>
                         </div>
                     </div>

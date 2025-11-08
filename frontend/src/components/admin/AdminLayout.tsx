@@ -53,7 +53,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const navigation = [
     { name: 'Dashboard', href: '/admin/dashboard', icon: BarChart3 },
     { name: 'Users', href: '/admin/users', icon: Users },
-    { name: 'Content', href: '/admin/content', icon: FileText },
+    { name: 'Question & Answers', href: '/admin/content', icon: FileText },
     { name: 'Communities', href: '/admin/communities', icon: BookOpen },
     { name: 'Articles', href: '/admin/article', icon: BookImage },
     { name: 'Settings', href: '/admin/settings', icon: Settings },
