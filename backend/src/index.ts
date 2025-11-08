@@ -15,13 +15,13 @@ import { menteeRequestRouter } from './routes/mentee-request';
 import tagsRoute from "./routes/rectags";
 import spellcheckerRoute from './routes/spellcheck-express';
 import similarQuestionsRoute from './routes/similar-questions';
-import http from 'http';
+import validateAnswerRoute from './routes/validate-answer';
+import { createServer, IncomingMessage } from 'node:http';
 // inlined discussions connection handler to avoid import/init order issues
 import { prisma } from '../lib/prisma';
 import { chatRouter } from './routes/chat';
 import WebSocket, { WebSocketServer, RawData } from 'ws';
-import { IncomingMessage } from 'http';
-import url from 'url';
+// Removed legacy parseUrl usage; rely on WHATWG URL API exclusively
 import jwt from 'jsonwebtoken';
 import { getRabbitChannel, createEphemeralConsumer, publish } from './realtime/rabbit';
 import { WS_PATHS, ROUTING_KEYS, EXCHANGES } from './realtime/constants';
@@ -34,7 +34,10 @@ import { bookmarksRouter } from './routes/bookmarks';
 import uploadRouter from './routes/upload';
 // Admin routes
 import { adminAuthRouter } from './routes/admin/auth';
-
+import adminUsersRouter from './routes/admin/users';
+import adminStatsRouter from './routes/admin/stats';
+import adminCommunitiesRouter from './routes/admin/communities';
+import adminContentRouter from './routes/admin/content';
 // Load environment variables
 dotenv.config();
 
@@ -73,7 +76,12 @@ app.use('/api/upload', uploadRouter);
 
 // Admin Routes - Protected by requireAdmin middleware
 app.use('/api/admin/auth', adminAuthRouter);
+app.use('/api/admin/users', adminUsersRouter);
+app.use('/api/admin/stats', adminStatsRouter);
+app.use('/api/admin/communities', adminCommunitiesRouter);
+app.use('/api/admin/content', adminContentRouter);
 
+app.use('/api/validate-answer', validateAnswerRoute);
 // Health check endpoint
 app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', message: 'MentorStack API is running' });
@@ -96,13 +104,16 @@ app.get('/', (req, res) => {
       '/api/articles',
       '/api/admin/auth/login',
       '/api/admin/users',
-      '/api/admin/analytics'
+      '/api/admin/stats/overview',
+      '/api/admin/content/questions',
+      '/api/admin/content/articles',
+      '/api/admin/content/posts'
     ] 
   });
 });
 
 // Create HTTP server to attach WebSocket server
-const server = http.createServer(app);
+const server = createServer(app);
 
 // Create WebSocket servers without attaching them to the HTTP server directly.
 const discussionsWss = new WebSocketServer({ noServer: true });
@@ -112,12 +123,16 @@ const chatWss = new WebSocketServer({ noServer: true });
 // Helper: auth from query
 function authenticateFromQuery(reqUrl: string | undefined) {
   if (!reqUrl) return null as any;
-  const parsed = url.parse(reqUrl, true);
-  const token = (parsed.query.token as string) || '';
+  let token = '';
+  try {
+    const u = new URL(reqUrl, 'http://localhost');
+    token = u.searchParams.get('token') || '';
+  } catch {
+    return null;
+  }
   if (!token) return null;
   try {
-    const payload = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret') as any;
-    return payload; // { userId, role, email }
+    return jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret') as any;
   } catch {
     return null;
   }
@@ -126,8 +141,8 @@ function authenticateFromQuery(reqUrl: string | undefined) {
 // Assign connection handlers
 discussionsWss.on('connection', async (ws: WebSocket, req: IncomingMessage) => {
   try {
-    const parsed = url.parse(req.url || '', true);
-    const communityId = Number(parsed.query.communityId);
+  const urlObj = new URL(req.url || '', 'http://localhost');
+    const communityId = Number(urlObj.searchParams.get('communityId'));
     const auth = authenticateFromQuery(req.url);
 
     if (!auth || !communityId || Number.isNaN(communityId)) {
@@ -155,10 +170,11 @@ discussionsWss.on('connection', async (ws: WebSocket, req: IncomingMessage) => {
         ORDER BY cm."createdAt" DESC
         LIMIT 50
       `;
+      const orderedRecent = recent.slice().reverse();
       const historyPayload = {
         type: 'community.history',
         communityId,
-        messages: recent.reverse().map((m: any) => ({
+        messages: orderedRecent.map((m: any) => ({
           id: m.id,
           content: m.content,
           timestamp: m.createdAt,
@@ -182,7 +198,16 @@ discussionsWss.on('connection', async (ws: WebSocket, req: IncomingMessage) => {
 
     ws.on('message', async (raw: RawData) => {
       try {
-        const text = raw.toString();
+        let text = '';
+        if (typeof raw === 'string') {
+          text = raw;
+        } else if (Buffer.isBuffer(raw)) {
+          text = raw.toString();
+        } else if (Array.isArray(raw)) {
+          text = Buffer.concat(raw as any).toString();
+        } else if (raw instanceof ArrayBuffer) {
+          text = Buffer.from(raw).toString();
+        }
         const payload = JSON.parse(text);
         const content = String(payload?.content || '').slice(0, 4000);
         if (!content) return;
@@ -232,8 +257,8 @@ discussionsWss.on('connection', async (ws: WebSocket, req: IncomingMessage) => {
 
 mainWss.on('connection', async (ws: WebSocket, req) => {
   try {
-    const parsed = url.parse(req.url || '', true);
-    const token = (parsed.query.token as string) || '';
+  const urlObj = new URL(req.url || '', 'http://localhost');
+  const token = urlObj.searchParams.get('token') || '';
     if (!token) { ws.close(1008, 'Unauthorized'); return; }
     const auth = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret') as any;
     const userId = auth.userId;
@@ -270,9 +295,9 @@ mainWss.on('connection', async (ws: WebSocket, req) => {
 // Mentor-Mentee direct chat WS: /ws/chat?token=...&connectionId=123
 chatWss.on('connection', async (ws: WebSocket, req: IncomingMessage) => {
   try {
-    const parsed = url.parse(req.url || '', true);
-    const token = (parsed.query.token as string) || '';
-    const connectionId = Number(parsed.query.connectionId);
+  const urlObj = new URL(req.url || '', 'http://localhost');
+  const token = urlObj.searchParams.get('token') || '';
+  const connectionId = Number(urlObj.searchParams.get('connectionId'));
     if (!token || !connectionId || Number.isNaN(connectionId)) {
       ws.close(1008, 'Unauthorized or invalid connection');
       return;
@@ -317,7 +342,16 @@ chatWss.on('connection', async (ws: WebSocket, req: IncomingMessage) => {
 
     ws.on('message', async (raw: RawData) => {
       try {
-        const text = raw.toString();
+        let text = '';
+        if (typeof raw === 'string') {
+          text = raw;
+        } else if (Buffer.isBuffer(raw)) {
+          text = raw.toString();
+        } else if (Array.isArray(raw)) {
+          text = Buffer.concat(raw as any).toString();
+        } else if (raw instanceof ArrayBuffer) {
+          text = Buffer.from(raw).toString();
+        }
         const payload = JSON.parse(text);
         const content = String(payload?.content || '').slice(0, 4000);
         if (!content) return;
@@ -369,7 +403,12 @@ chatWss.on('connection', async (ws: WebSocket, req: IncomingMessage) => {
 
 // Centralized upgrade handler
 server.on('upgrade', (request, socket, head) => {
-  const pathname = url.parse(request.url || '').pathname;
+  let pathname: string | null = null;
+  try {
+    pathname = new URL(request.url || '', 'http://localhost').pathname;
+  } catch {
+    pathname = null;
+  }
 
   if (pathname === WS_PATHS.discussions) {
     discussionsWss.handleUpgrade(request, socket, head, (ws) => {

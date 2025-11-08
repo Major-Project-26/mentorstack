@@ -21,6 +21,9 @@ import {
   X,
   Send,
   Lightbulb,
+  CheckCircle,
+  AlertCircle,
+  Target,
   Edit,
   Trash2,
   Save,
@@ -54,16 +57,28 @@ export default function QuestionDetailPage() {
   const [editAnswerContent, setEditAnswerContent] = useState("");
   const [currentUserId, setCurrentUserId] = useState<number | null>(null);
 
+  // Current user state
+  const [currentUser, setCurrentUser] = useState<any>(null);
+
   // Summarize feature state
   const [summary, setSummary] = useState("");
   const [summarizeLoading, setSummarizeLoading] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
+
+  // Answer validation state
+  const [validatingAnswerId, setValidatingAnswerId] = useState<number | null>(null);
+  const [validationResult, setValidationResult] = useState<any>(null);
+  const [showValidationModal, setShowValidationModal] = useState(false);
 
   useEffect(() => {
     const loadQuestion = async () => {
       if (!questionId) return;
       
       try {
+        // Get current user
+        const userData = await authAPI.getCurrentUser();
+        setCurrentUser(userData.user);
+
   const questionData = await authAPI.getQuestion(questionId);
         setQuestion(questionData);
         
@@ -113,6 +128,74 @@ export default function QuestionDetailPage() {
       setShowSummary(true);
     } finally {
       setSummarizeLoading(false);
+    }
+  };
+
+  const handleValidateAnswer = async (answerId: number, answerContent: string) => {
+    if (!question) return;
+    
+    setValidatingAnswerId(answerId);
+    setValidationResult(null);
+    
+    try {
+      const token = localStorage.getItem('authToken');
+      
+      const res = await fetch("http://localhost:5000/api/validate-answer", {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          question: question.title + (question.description ? "\n\n" + question.description : ""),
+          answer: answerContent,
+          answerId: answerId,
+        }),
+      });
+      
+      if (!res.ok) throw new Error("Validation failed");
+      
+      const data = await res.json();
+      setValidationResult(data);
+      setShowValidationModal(true);
+    } catch (err) {
+      console.error("Validation error:", err);
+      setValidationResult({
+        verdict: "error",
+        summary: "Failed to validate answer. Please try again.",
+      });
+      setShowValidationModal(true);
+    } finally {
+      setValidatingAnswerId(null);
+    }
+  };
+
+  const getVerdictColor = (verdict: string) => {
+    switch (verdict) {
+      case "excellent":
+        return "bg-green-50 border-green-500 text-green-800";
+      case "good":
+        return "bg-blue-50 border-blue-500 text-blue-800";
+      case "needs_improvement":
+        return "bg-orange-50 border-orange-500 text-orange-800";
+      case "off_topic":
+        return "bg-red-50 border-red-500 text-red-800";
+      default:
+        return "bg-gray-50 border-gray-500 text-gray-800";
+    }
+  };
+
+  const getVerdictIcon = (verdict: string) => {
+    switch (verdict) {
+      case "excellent":
+      case "good":
+        return <CheckCircle className="w-6 h-6" />;
+      case "needs_improvement":
+        return <AlertCircle className="w-6 h-6" />;
+      case "off_topic":
+        return <XCircle className="w-6 h-6" />;
+      default:
+        return <AlertCircle className="w-6 h-6" />;
     }
   };
 
@@ -771,7 +854,33 @@ export default function QuestionDetailPage() {
                                 {answer.content}
                               </div>
                             </div>
+                            
+                          {/* Validate Answer Button - Only for Question Author */}
+                          {currentUser && question && currentUser.id === question.authorId && (
+                            <div className="mt-4 pt-4 border-t border-gray-200">
+                              <button
+                                onClick={() => handleValidateAnswer(answer.id, answer.content)}
+                                disabled={validatingAnswerId === answer.id}
+                                className="flex items-center gap-2 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                              {validatingAnswerId === answer.id ? (
+                                <>
+                                  <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                  </svg>
+                                  Validating...
+                                </>
+                              ) : (
+                                <>
+                                  <Target className="w-4 h-4" />
+                                  Validate Answer
+                                </>
+                              )}
+                            </button>
                           </div>
+                          )}
+                        </div>
                         </div>
                       )}
                     </div>
@@ -1166,6 +1275,136 @@ export default function QuestionDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Validation Modal */}
+      {showValidationModal && validationResult && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            {/* Modal Header */}
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between rounded-t-xl">
+              <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                <Target className="w-6 h-6 text-emerald-600" />
+                Answer Validation Results
+              </h3>
+              <button
+                onClick={() => setShowValidationModal(false)}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6">
+              {/* Verdict Card */}
+              <div className={`rounded-xl border-2 p-5 mb-6 ${getVerdictColor(validationResult.verdict)}`}>
+                <div className="flex items-center gap-3 mb-2">
+                  {getVerdictIcon(validationResult.verdict)}
+                  <h4 className="text-xl font-bold capitalize">
+                    {validationResult.verdict === 'needs_improvement' 
+                      ? 'Needs Improvement' 
+                      : validationResult.verdict}
+                  </h4>
+                </div>
+                <p className="text-sm opacity-90 mt-2">
+                  {validationResult.summary}
+                </p>
+                
+                {/* Score */}
+                {validationResult.relevance_score !== undefined && (
+                  <div className="mt-4">
+                    <div className="flex items-center justify-between text-sm font-semibold mb-2">
+                      <span>Relevance Score</span>
+                      <span>{validationResult.relevance_score}/10</span>
+                    </div>
+                    <div className="w-full bg-white bg-opacity-50 rounded-full h-2">
+                      <div
+                        className="h-2 rounded-full transition-all duration-500"
+                        style={{
+                          width: `${validationResult.relevance_score * 10}%`,
+                          backgroundColor: 
+                            validationResult.relevance_score >= 7 
+                              ? '#10b981' 
+                              : validationResult.relevance_score >= 5 
+                              ? '#f59e0b' 
+                              : '#ef4444',
+                        }}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Details Grid */}
+              <div className="space-y-4">
+                {/* Strengths */}
+                {validationResult.strengths && validationResult.strengths.length > 0 && (
+                  <div className="bg-green-50 rounded-lg p-4 border border-green-200">
+                    <div className="flex items-center gap-2 mb-2">
+                      <CheckCircle className="w-5 h-5 text-green-600" />
+                      <h5 className="font-semibold text-green-900">Strengths</h5>
+                    </div>
+                    <ul className="space-y-1">
+                      {validationResult.strengths.map((strength: string, idx: number) => (
+                        <li key={`strength-${idx}`} className="text-sm text-green-800 flex items-start gap-2">
+                          <span className="text-green-600 mt-0.5">✓</span>
+                          <span>{strength}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Suggestions */}
+                {validationResult.suggestions && validationResult.suggestions.length > 0 && (
+                  <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Lightbulb className="w-5 h-5 text-blue-600" />
+                      <h5 className="font-semibold text-blue-900">Suggestions</h5>
+                    </div>
+                    <ul className="space-y-1">
+                      {validationResult.suggestions.map((suggestion: string, idx: number) => (
+                        <li key={`suggestion-${idx}`} className="text-sm text-blue-800 flex items-start gap-2">
+                          <span className="text-blue-600 mt-0.5">💡</span>
+                          <span>{suggestion}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Weaknesses */}
+                {validationResult.weaknesses && validationResult.weaknesses.length > 0 && (
+                  <div className="bg-orange-50 rounded-lg p-4 border border-orange-200">
+                    <div className="flex items-center gap-2 mb-2">
+                      <AlertCircle className="w-5 h-5 text-orange-600" />
+                      <h5 className="font-semibold text-orange-900">Areas to Improve</h5>
+                    </div>
+                    <ul className="space-y-1">
+                      {validationResult.weaknesses.map((weakness: string, idx: number) => (
+                        <li key={`weakness-${idx}`} className="text-sm text-orange-800 flex items-start gap-2">
+                          <span className="text-orange-600 mt-0.5">⚠</span>
+                          <span>{weakness}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="sticky bottom-0 bg-gray-50 border-t border-gray-200 px-6 py-4 rounded-b-xl">
+              <button
+                onClick={() => setShowValidationModal(false)}
+                className="w-full px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg font-medium transition-colors"
+              >
+                Got it!
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </Layout>
   );
 }
