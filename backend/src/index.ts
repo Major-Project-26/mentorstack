@@ -38,6 +38,8 @@ import { adminUsersRouter } from './routes/admin/users';
 import adminStatsRouter from './routes/admin/stats';
 import adminCommunitiesRouter from './routes/admin/communities';
 import adminContentRouter from './routes/admin/content';
+import adminTagsRouter from './routes/admin/tags';
+import adminMentorshipRouter from './routes/admin/mentorship';
 // Load environment variables
 dotenv.config();
 
@@ -80,6 +82,8 @@ app.use('/api/admin/users', adminUsersRouter);
 app.use('/api/admin/stats', adminStatsRouter);
 app.use('/api/admin/communities', adminCommunitiesRouter);
 app.use('/api/admin/content', adminContentRouter);
+app.use('/api/admin/tags', adminTagsRouter);
+app.use('/api/admin/mentorship', adminMentorshipRouter);
 
 app.use('/api/validate-answer', validateAnswerRoute);
 // Health check endpoint

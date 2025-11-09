@@ -8,289 +8,349 @@ const router = express.Router();
 // Apply admin authentication to all routes
 router.use(requireAdmin);
 
+// Utility: Retry database queries with exponential backoff (handles Neon cold starts)
+async function retryDatabaseQuery<T>(
+  queryFn: () => Promise<T>,
+  maxRetries = 3,
+  initialDelayMs = 1000
+): Promise<T> {
+  let lastError: any;
+
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      return await queryFn();
+    } catch (error: any) {
+      lastError = error;
+
+      // Only retry on connection errors (P1001 = Can't reach database server)
+      if (error.code === 'P1001' && attempt < maxRetries) {
+        const delayMs = initialDelayMs * Math.pow(2, attempt - 1); // Exponential backoff
+        console.log(`🔄 Database connection failed (attempt ${attempt}/${maxRetries}). Retrying in ${delayMs}ms...`);
+        console.log(`   Error: ${error.message}`);
+        await new Promise(resolve => setTimeout(resolve, delayMs));
+        continue;
+      }
+
+      // Don't retry for other errors (syntax errors, constraint violations, etc.)
+      throw error;
+    }
+  }
+
+  throw lastError;
+}
+
 // Get overview dashboard statistics
 router.get('/overview', async (req: any, res: any) => {
   try {
-    const [
-      // User stats
-      totalUsers,
-      newUsersToday,
-      newUsersThisWeek,
-      newUsersThisMonth,
-  activeUsersToday,
-  activeUsersThisWeek,
-      mentors,
-      mentees,
-      admins,
+    console.log('📊 Fetching overview stats for admin:', req.user?.id);
 
-      // Content stats
-      totalQuestions,
-      questionsToday,
-      questionsThisWeek,
-      totalAnswers,
-      answersToday,
-      totalArticles,
-      articesToday,
-      
-      // Community stats
-      totalCommunities,
-      totalCommunityPosts,
-      communitiesThisMonth,
-      
-      // Engagement stats
-      totalVotes,
-      votesToday,
-      totalBookmarks,
-      bookmarksToday,
-      
-      // Mentorship stats
-      totalMentorshipRequests,
-      pendingRequests,
-      acceptedRequests,
-      requestsThisMonth
-    ] = await Promise.all([
-      // User queries
-      prisma.user.count(),
-      prisma.user.count({
-        where: {
-          createdAt: { gte: new Date(new Date().setHours(0, 0, 0, 0)) }
-        }
-      }),
-      prisma.user.count({
-        where: {
-          createdAt: { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) }
-        }
-      }),
-      prisma.user.count({
-        where: {
-          createdAt: { gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1) }
-        }
-      }),
-      // Active users approximation: any question/answer/article today
-      prisma.user.count({
-        where: {
-          OR: [
-            { questions: { some: { createdAt: { gte: new Date(new Date().setHours(0,0,0,0)) } } } },
-            { answers: { some: { createdAt: { gte: new Date(new Date().setHours(0,0,0,0)) } } } },
-            { articles: { some: { createdAt: { gte: new Date(new Date().setHours(0,0,0,0)) } } } }
-          ]
-        }
-      }),
-      prisma.user.count({
-        where: {
-          OR: [
-            { questions: { some: { createdAt: { gte: new Date(Date.now() - 7*24*60*60*1000) } } } },
-            { answers: { some: { createdAt: { gte: new Date(Date.now() - 7*24*60*60*1000) } } } },
-            { articles: { some: { createdAt: { gte: new Date(Date.now() - 7*24*60*60*1000) } } } }
-          ]
-        }
-      }),
-      prisma.user.count({ where: { role: Role.mentor } }),
-      prisma.user.count({ where: { role: Role.mentee } }),
-      prisma.user.count({ where: { role: Role.admin } }),
-
-      // Content queries
-      prisma.question.count(),
-      prisma.question.count({
-        where: {
-          createdAt: { gte: new Date(new Date().setHours(0, 0, 0, 0)) }
-        }
-      }),
-      prisma.question.count({
-        where: {
-          createdAt: { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) }
-        }
-      }),
-      prisma.answer.count(),
-      prisma.answer.count({
-        where: {
-          createdAt: { gte: new Date(new Date().setHours(0, 0, 0, 0)) }
-        }
-      }),
-      prisma.article.count(),
-      prisma.article.count({
-        where: {
-          createdAt: { gte: new Date(new Date().setHours(0, 0, 0, 0)) }
-        }
-      }),
-
-      // Community queries
-      prisma.community.count(),
-      prisma.communityPost.count(),
-      prisma.community.count({
-        where: {
-          createdAt: { gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1) }
-        }
-      }),
-
-      // Engagement queries
-      prisma.answerVote.count(),
-      prisma.answerVote.count({
-        where: {
-          createdAt: { gte: new Date(new Date().setHours(0, 0, 0, 0)) }
-        }
-      }),
-      prisma.questionBookmark.count(),
-      prisma.questionBookmark.count({
-        where: {
-          createdAt: { gte: new Date(new Date().setHours(0, 0, 0, 0)) }
-        }
-      }),
-
-      // Mentorship queries
-      prisma.mentorshipRequest.count(),
-      prisma.mentorshipRequest.count({ where: { status: 'pending' } }),
-      prisma.mentorshipRequest.count({ where: { status: 'accepted' } }),
-      prisma.mentorshipRequest.count({
-        where: {
-          createdAt: { gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1) }
-        }
-      }),
-      prisma.connection.count()
-    ]);
-
-    // Calculate growth rates
-    const lastMonth = new Date(new Date().getFullYear(), new Date().getMonth() - 1, 1);
-    const thisMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
-    
-    const [usersLastMonth, questionsLastMonth, articlesLastMonth] = await Promise.all([
-      prisma.user.count({
-        where: {
-          createdAt: { gte: lastMonth, lt: thisMonth }
-        }
-      }),
-      prisma.question.count({
-        where: {
-          createdAt: { gte: lastMonth, lt: thisMonth }
-        }
-      }),
-      prisma.article.count({
-        where: {
-          createdAt: { gte: lastMonth, lt: thisMonth }
-        }
-      })
-    ]);
-
-    // Calculate growth percentages
-    const userGrowth = usersLastMonth > 0 ? ((newUsersThisMonth - usersLastMonth) / usersLastMonth * 100) : 0;
-    const questionGrowth = questionsLastMonth > 0 ? ((questionsThisWeek - questionsLastMonth) / questionsLastMonth * 100) : 0;
-    const articleGrowth = articlesLastMonth > 0 ? ((articesToday * 30 - articlesLastMonth) / articlesLastMonth * 100) : 0;
-
-    // Get top active users
-    const topActiveUsers = await prisma.user.findMany({
-      take: 5,
-      orderBy: { reputation: 'desc' },
-      where: {
-        OR: [
-          { questions: { some: { createdAt: { gte: new Date(Date.now() - 7*24*60*60*1000) } } } },
-          { answers: { some: { createdAt: { gte: new Date(Date.now() - 7*24*60*60*1000) } } } },
-          { articles: { some: { createdAt: { gte: new Date(Date.now() - 7*24*60*60*1000) } } } }
-        ]
-      },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        reputation: true,
-        role: true,
-        avatarUrl: true
-      }
-    });
-
-    // Get recent activity trends (last 7 days)
-    const activityTrends = await Promise.all(
-      Array.from({ length: 7 }, async (_, i) => {
-        const date = new Date(Date.now() - i * 24 * 60 * 60 * 1000);
-        const startOfDay = new Date(date.setHours(0, 0, 0, 0));
-        const endOfDay = new Date(date.setHours(23, 59, 59, 999));
-
-        const [questions, answers, articles, users] = await Promise.all([
-          prisma.question.count({
-            where: { createdAt: { gte: startOfDay, lte: endOfDay } }
-          }),
-          prisma.answer.count({
-            where: { createdAt: { gte: startOfDay, lte: endOfDay } }
-          }),
-          prisma.article.count({
-            where: { createdAt: { gte: startOfDay, lte: endOfDay } }
-          }),
-          prisma.user.count({
-            where: { createdAt: { gte: startOfDay, lte: endOfDay } }
-          })
-        ]);
-
-        return {
-          date: startOfDay.toISOString().split('T')[0],
-          questions,
-          answers,
-          articles,
-          users
-        };
-      })
-    );
-
-    const overviewStats = {
-      users: {
-        total: totalUsers,
-        newToday: newUsersToday,
-        newThisWeek: newUsersThisWeek,
-        newThisMonth: newUsersThisMonth,
-        activeToday: activeUsersToday,
-        activeThisWeek: activeUsersThisWeek,
+    // Wrap all database queries in retry logic
+    const overviewData = await retryDatabaseQuery(async () => {
+      const [
+        // User stats
+        totalUsers,
+        newUsersToday,
+        newUsersThisWeek,
+        newUsersThisMonth,
+        activeUsersToday,
+        activeUsersThisWeek,
         mentors,
         mentees,
         admins,
-        growthRate: Math.round(userGrowth * 100) / 100
-      },
-      content: {
-        questions: {
-          total: totalQuestions,
-          today: questionsToday,
-          thisWeek: questionsThisWeek,
-          growthRate: Math.round(questionGrowth * 100) / 100
+
+        // Content stats
+        totalQuestions,
+        questionsToday,
+        questionsThisWeek,
+        totalAnswers,
+        answersToday,
+        totalArticles,
+        articesToday,
+
+        // Community stats
+        totalCommunities,
+        totalCommunityPosts,
+        communitiesThisMonth,
+
+        // Engagement stats
+        totalVotes,
+        votesToday,
+        totalBookmarks,
+        bookmarksToday,
+
+        // Mentorship stats
+        totalMentorshipRequests,
+        pendingRequests,
+        acceptedRequests,
+        requestsThisMonth,
+        totalConnections
+      ] = await Promise.all([
+        // User queries
+        prisma.user.count(),
+        prisma.user.count({
+          where: {
+            createdAt: { gte: new Date(new Date().setHours(0, 0, 0, 0)) }
+          }
+        }),
+        prisma.user.count({
+          where: {
+            createdAt: { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) }
+          }
+        }),
+        prisma.user.count({
+          where: {
+            createdAt: { gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1) }
+          }
+        }),
+        // Active users approximation: any question/answer/article today
+        prisma.user.count({
+          where: {
+            OR: [
+              { questions: { some: { createdAt: { gte: new Date(new Date().setHours(0, 0, 0, 0)) } } } },
+              { answers: { some: { createdAt: { gte: new Date(new Date().setHours(0, 0, 0, 0)) } } } },
+              { articles: { some: { createdAt: { gte: new Date(new Date().setHours(0, 0, 0, 0)) } } } }
+            ]
+          }
+        }),
+        prisma.user.count({
+          where: {
+            OR: [
+              { questions: { some: { createdAt: { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) } } } },
+              { answers: { some: { createdAt: { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) } } } },
+              { articles: { some: { createdAt: { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) } } } }
+            ]
+          }
+        }),
+        prisma.user.count({ where: { role: Role.mentor } }),
+        prisma.user.count({ where: { role: Role.mentee } }),
+        prisma.user.count({ where: { role: Role.admin } }),
+
+        // Content queries
+        prisma.question.count(),
+        prisma.question.count({
+          where: {
+            createdAt: { gte: new Date(new Date().setHours(0, 0, 0, 0)) }
+          }
+        }),
+        prisma.question.count({
+          where: {
+            createdAt: { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) }
+          }
+        }),
+        prisma.answer.count(),
+        prisma.answer.count({
+          where: {
+            createdAt: { gte: new Date(new Date().setHours(0, 0, 0, 0)) }
+          }
+        }),
+        prisma.article.count(),
+        prisma.article.count({
+          where: {
+            createdAt: { gte: new Date(new Date().setHours(0, 0, 0, 0)) }
+          }
+        }),
+
+        // Community queries
+        prisma.community.count(),
+        prisma.communityPost.count(),
+        prisma.community.count({
+          where: {
+            createdAt: { gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1) }
+          }
+        }),
+
+        // Engagement queries
+        prisma.answerVote.count(),
+        prisma.answerVote.count({
+          where: {
+            createdAt: { gte: new Date(new Date().setHours(0, 0, 0, 0)) }
+          }
+        }),
+        prisma.questionBookmark.count(),
+        prisma.questionBookmark.count({
+          where: {
+            createdAt: { gte: new Date(new Date().setHours(0, 0, 0, 0)) }
+          }
+        }),
+
+        // Mentorship queries
+        prisma.mentorshipRequest.count(),
+        prisma.mentorshipRequest.count({ where: { status: 'pending' } }),
+        prisma.mentorshipRequest.count({ where: { status: 'accepted' } }),
+        prisma.mentorshipRequest.count({
+          where: {
+            createdAt: { gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1) }
+          }
+        }),
+        prisma.connection.count()
+      ]);
+
+      // Calculate growth rates
+      const lastMonth = new Date(new Date().getFullYear(), new Date().getMonth() - 1, 1);
+      const thisMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+
+      const [usersLastMonth, questionsLastMonth, articlesLastMonth] = await Promise.all([
+        prisma.user.count({
+          where: {
+            createdAt: { gte: lastMonth, lt: thisMonth }
+          }
+        }),
+        prisma.question.count({
+          where: {
+            createdAt: { gte: lastMonth, lt: thisMonth }
+          }
+        }),
+        prisma.article.count({
+          where: {
+            createdAt: { gte: lastMonth, lt: thisMonth }
+          }
+        })
+      ]);
+
+      // Calculate growth percentages
+      const userGrowth = usersLastMonth > 0 ? ((newUsersThisMonth - usersLastMonth) / usersLastMonth * 100) : 0;
+      const questionGrowth = questionsLastMonth > 0 ? ((questionsThisWeek - questionsLastMonth) / questionsLastMonth * 100) : 0;
+      const articleGrowth = articlesLastMonth > 0 ? ((articesToday * 30 - articlesLastMonth) / articlesLastMonth * 100) : 0;
+
+      // Get top active users
+      const topActiveUsers = await prisma.user.findMany({
+        take: 5,
+        orderBy: { reputation: 'desc' },
+        where: {
+          OR: [
+            { questions: { some: { createdAt: { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) } } } },
+            { answers: { some: { createdAt: { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) } } } },
+            { articles: { some: { createdAt: { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) } } } }
+          ]
         },
-        answers: {
-          total: totalAnswers,
-          today: answersToday
-        },
-        articles: {
-          total: totalArticles,
-          today: articesToday,
-          growthRate: Math.round(articleGrowth * 100) / 100
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          reputation: true,
+          role: true,
+          avatarUrl: true
         }
-      },
-      communities: {
-        total: totalCommunities,
-        posts: totalCommunityPosts,
-        newThisMonth: communitiesThisMonth
-      },
-      engagement: {
-        answerVotes: {
-          total: totalVotes,
-          today: votesToday
+      });
+
+      // Get recent activity trends (last 7 days)
+      const activityTrends = await Promise.all(
+        Array.from({ length: 7 }, async (_, i) => {
+          const date = new Date(Date.now() - i * 24 * 60 * 60 * 1000);
+          const startOfDay = new Date(date.setHours(0, 0, 0, 0));
+          const endOfDay = new Date(date.setHours(23, 59, 59, 999));
+
+          const [questions, answers, articles, users] = await Promise.all([
+            prisma.question.count({
+              where: { createdAt: { gte: startOfDay, lte: endOfDay } }
+            }),
+            prisma.answer.count({
+              where: { createdAt: { gte: startOfDay, lte: endOfDay } }
+            }),
+            prisma.article.count({
+              where: { createdAt: { gte: startOfDay, lte: endOfDay } }
+            }),
+            prisma.user.count({
+              where: { createdAt: { gte: startOfDay, lte: endOfDay } }
+            })
+          ]);
+
+          return {
+            date: startOfDay.toISOString().split('T')[0],
+            questions,
+            answers,
+            articles,
+            users
+          };
+        })
+      );
+
+      const overviewStats = {
+        users: {
+          total: totalUsers,
+          newToday: newUsersToday,
+          newThisWeek: newUsersThisWeek,
+          newThisMonth: newUsersThisMonth,
+          activeToday: activeUsersToday,
+          activeThisWeek: activeUsersThisWeek,
+          mentors,
+          mentees,
+          admins,
+          growthRate: Math.round(userGrowth * 100) / 100
         },
-        questionBookmarks: {
-          total: totalBookmarks,
-          today: bookmarksToday
-        }
-      },
-      mentorship: {
-        totalRequests: totalMentorshipRequests,
-        pending: pendingRequests,
-        accepted: acceptedRequests,
-        newThisMonth: requestsThisMonth,
-        totalConnections: await prisma.connection.count(),
-        acceptanceRate: totalMentorshipRequests > 0 ? 
-          Math.round((acceptedRequests / totalMentorshipRequests) * 100) : 0
-      },
-      topActiveUsers,
-  activityTrends: activityTrends.slice().reverse() // Show oldest to newest
+        content: {
+          questions: {
+            total: totalQuestions,
+            today: questionsToday,
+            thisWeek: questionsThisWeek,
+            growthRate: Math.round(questionGrowth * 100) / 100
+          },
+          answers: {
+            total: totalAnswers,
+            today: answersToday
+          },
+          articles: {
+            total: totalArticles,
+            today: articesToday,
+            growthRate: Math.round(articleGrowth * 100) / 100
+          }
+        },
+        communities: {
+          total: totalCommunities,
+          posts: totalCommunityPosts,
+          newThisMonth: communitiesThisMonth
+        },
+        engagement: {
+          answerVotes: {
+            total: totalVotes,
+            today: votesToday
+          },
+          questionBookmarks: {
+            total: totalBookmarks,
+            today: bookmarksToday
+          }
+        },
+        mentorship: {
+          totalRequests: totalMentorshipRequests,
+          pending: pendingRequests,
+          accepted: acceptedRequests,
+          newThisMonth: requestsThisMonth,
+          totalConnections: totalConnections,
+          acceptanceRate: totalMentorshipRequests > 0 ?
+            Math.round((acceptedRequests / totalMentorshipRequests) * 100) : 0
+        },
+        topActiveUsers,
+        activityTrends: activityTrends.slice().reverse() // Show oldest to newest
+      };
+
+      return overviewStats;
+    }, 3, 2000); // 3 retries, starting with 2 second delay
+
+    console.log('✅ Successfully fetched overview stats');
+    res.json(overviewData);
+  } catch (error) {
+    console.error('❌ Error fetching overview stats:', error);
+    console.error('Error details:', error instanceof Error ? error.message : error);
+    console.error('Stack trace:', error instanceof Error ? error.stack : 'No stack trace');
+
+    // Enhanced error response
+    const errorResponse: any = {
+      error: 'Failed to fetch overview statistics',
+      details: error instanceof Error ? error.message : 'Unknown error'
     };
 
-    res.json(overviewStats);
-  } catch (error) {
-    console.error('Error fetching overview stats:', error);
-    res.status(500).json({ error: 'Failed to fetch overview statistics' });
+    // Add error code if available
+    if ((error as any).code) {
+      errorResponse.code = (error as any).code;
+    }
+
+    // Special message for connection errors
+    if ((error as any).code === 'P1001') {
+      errorResponse.hint = 'Database connection failed. Please ensure your Neon database is active and accessible.';
+      console.error('💡 HINT: Your Neon database may be sleeping. Visit https://console.neon.tech to wake it up.');
+    }
+
+    res.status(500).json(errorResponse);
   }
 });
 
@@ -308,14 +368,14 @@ router.get('/users', async (req: any, res: any) => {
         by: ['role'],
         _count: { role: true }
       }),
-      
+
       // Department distribution
       prisma.user.groupBy({
         by: ['department'],
         _count: { department: true },
         where: { department: { not: null } }
       }),
-      
+
       // Registration trends (last 12 months)
       Promise.all(
         Array.from({ length: 12 }, async (_, i) => {
@@ -323,7 +383,7 @@ router.get('/users', async (req: any, res: any) => {
           date.setMonth(date.getMonth() - i);
           const startOfMonth = new Date(date.getFullYear(), date.getMonth(), 1);
           const endOfMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0);
-          
+
           const count = await prisma.user.count({
             where: {
               createdAt: {
@@ -332,15 +392,15 @@ router.get('/users', async (req: any, res: any) => {
               }
             }
           });
-          
+
           return {
             month: startOfMonth.toISOString().slice(0, 7),
             count
           };
         })
       ),
-      
-      
+
+
       // Reputation distribution
       Promise.all([
         prisma.user.count({ where: { reputation: { gte: 1000 } } }),
@@ -360,7 +420,7 @@ router.get('/users', async (req: any, res: any) => {
         department: item.department,
         count: item._count.department
       })),
-  registrationTrends: registrationTrends.slice().reverse(),
+      registrationTrends: registrationTrends.slice().reverse(),
       // activityLevels removed (no lastActiveAt field)
       reputationDistribution: {
         expert: reputationDistribution[0], // 1000+
@@ -400,7 +460,7 @@ router.get('/content', async (req: any, res: any) => {
           _count: { select: { answers: true } }
         }
       }),
-      
+
       // Top articles by votes
       prisma.article.findMany({
         take: 10,
@@ -416,7 +476,7 @@ router.get('/content', async (req: any, res: any) => {
           }
         }
       }),
-      
+
       // Content creation trends (last 30 days)
       Promise.all(
         Array.from({ length: 30 }, async (_, i) => {
@@ -440,7 +500,7 @@ router.get('/content', async (req: any, res: any) => {
           };
         })
       ),
-      
+
       // Tag distribution (top 20 tags)
       prisma.tag.findMany({
         take: 20,
@@ -458,7 +518,7 @@ router.get('/content', async (req: any, res: any) => {
           }
         }
       }),
-      
+
       // Most active content authors
       prisma.user.findMany({
         take: 10,
@@ -486,7 +546,7 @@ router.get('/content', async (req: any, res: any) => {
     res.json({
       topQuestions,
       topArticles,
-  contentTrends: contentTrends.slice().reverse(),
+      contentTrends: contentTrends.slice().reverse(),
       tagDistribution,
       mostActiveAuthors
     });
@@ -527,7 +587,7 @@ router.get('/health', async (req: any, res: any) => {
     });
   } catch (error) {
     console.error('Error fetching health stats:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Failed to fetch system health',
       database: { status: 'error', health: 'poor' }
     });
@@ -641,8 +701,8 @@ router.get('/mentees/progress', async (req: any, res: any) => {
       const found = arr.find(r => r[key] === id);
       if (!found) return 0;
       if (rHasCount(found)) return found._count[key] ?? 0;
-  const anyFound: any = found; // explicit alias to satisfy lint rule
-  return typeof anyFound.cnt === 'number' ? anyFound.cnt : 0;
+      const anyFound: any = found; // explicit alias to satisfy lint rule
+      return typeof anyFound.cnt === 'number' ? anyFound.cnt : 0;
     };
 
     function rHasCount(r: any): r is { _count: Record<string, number> } {

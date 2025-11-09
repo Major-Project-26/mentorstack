@@ -3,17 +3,19 @@
 import { useState, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { adminAPI } from "@/lib/admin-api";
-import { 
-  Shield, 
-  Users, 
-  BookOpen, 
+import {
+  Shield,
+  Users,
   BookImage,
-  FileText, 
-  Settings, 
-  LogOut, 
-  Menu, 
+  HelpCircle,
+  Settings,
+  LogOut,
+  Menu,
   X,
-  BarChart3
+  BarChart3,
+  Hash,
+  Handshake,
+  MessagesSquare
 } from "lucide-react";
 
 interface AdminLayoutProps {
@@ -53,9 +55,11 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const navigation = [
     { name: 'Dashboard', href: '/admin/dashboard', icon: BarChart3 },
     { name: 'Users', href: '/admin/users', icon: Users },
-    { name: 'Question & Answers', href: '/admin/content', icon: FileText },
-    { name: 'Communities', href: '/admin/communities', icon: BookOpen },
+    { name: 'Question & Answers', href: '/admin/content', icon: HelpCircle },
+    { name: 'Mentorship', href: '/admin/mentorship', icon: Handshake },
+    { name: 'Communities', href: '/admin/communities', icon: MessagesSquare },
     { name: 'Articles', href: '/admin/article', icon: BookImage },
+    { name: 'Tags', href: '/admin/tags', icon: Hash },
     { name: 'Settings', href: '/admin/settings', icon: Settings },
   ];
 
@@ -121,16 +125,14 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                 <button
                   key={item.name}
                   onClick={() => router.push(item.href)}
-                  className={`group flex items-center w-full px-2 py-2 text-sm font-medium rounded-md transition-colors ${
-                    active
+                  className={`group flex items-center w-full px-2 py-2 text-sm font-medium rounded-md transition-colors ${active
                       ? 'bg-teal-100 text-teal-900'
                       : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                  }`}
+                    }`}
                 >
                   <Icon
-                    className={`mr-3 flex-shrink-0 h-5 w-5 ${
-                      active ? 'text-teal-500' : 'text-gray-400 group-hover:text-gray-500'
-                    }`}
+                    className={`mr-3 flex-shrink-0 h-5 w-5 ${active ? 'text-teal-500' : 'text-gray-400 group-hover:text-gray-500'
+                      }`}
                   />
                   {item.name}
                 </button>
@@ -152,9 +154,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       </div>
 
       {/* Mobile sidebar */}
-      <div className={`lg:hidden fixed inset-y-0 left-0 z-50 w-64 bg-white transform transition-transform duration-300 ease-in-out ${
-        sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-      }`}>
+      <div className={`lg:hidden fixed inset-y-0 left-0 z-50 w-64 bg-white transform transition-transform duration-300 ease-in-out ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}>
         <div className="flex flex-col h-full">
           {/* Mobile header */}
           <div className="flex items-center justify-between h-16 px-4 border-b">
@@ -203,16 +204,14 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                       router.push(item.href);
                       setSidebarOpen(false);
                     }}
-                    className={`group flex items-center w-full px-2 py-2 text-sm font-medium rounded-md transition-colors ${
-                      active
+                    className={`group flex items-center w-full px-2 py-2 text-sm font-medium rounded-md transition-colors ${active
                         ? 'bg-teal-100 text-teal-900'
                         : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                    }`}
+                      }`}
                   >
                     <Icon
-                      className={`mr-3 flex-shrink-0 h-5 w-5 ${
-                        active ? 'text-teal-500' : 'text-gray-400 group-hover:text-gray-500'
-                      }`}
+                      className={`mr-3 flex-shrink-0 h-5 w-5 ${active ? 'text-teal-500' : 'text-gray-400 group-hover:text-gray-500'
+                        }`}
                     />
                     {item.name}
                   </button>

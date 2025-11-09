@@ -2,22 +2,24 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import AdminLayout from "@/components/admin/AdminLayout";
 import AdminModals from "@/components/admin/AdminModals";
 import { adminAPI, OverviewStats } from "@/lib/admin-api";
 import { Users, MessageSquare, FileText, BookOpen, Eye, Gauge } from 'lucide-react';
 
 export default function AdminDashboard() {
+  const router = useRouter();
   const [stats, setStats] = useState<OverviewStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  
+
   // Modal states
   const [showUsersModal, setShowUsersModal] = useState(false);
   const [showQuestionsModal, setShowQuestionsModal] = useState(false);
   const [showArticlesModal, setShowArticlesModal] = useState(false);
   const [showCommunitiesModal, setShowCommunitiesModal] = useState(false);
-  
+
   // Data states for modals
   const [usersData, setUsersData] = useState<any>(null);
   const [questionsData, setQuestionsData] = useState<any>(null);
@@ -25,35 +27,76 @@ export default function AdminDashboard() {
   const [communitiesData, setCommunitiesData] = useState<any>(null);
   // Advanced analytics state
   const [mentorImpact, setMentorImpact] = useState<any[] | null>(null);
-  // Mentee progress state removed with radar chart removal
-  // maxima from mentee progress not currently displayed; omit separate state to avoid unused variable
 
   useEffect(() => {
-    const loadStats = async () => {
+    let mounted = true;
+
+    const loadDashboardData = async () => {
       try {
+        // Check if we have authentication token
+        const token = localStorage.getItem('adminAuthToken');
+
+        if (!token) {
+          console.log('No admin token found, redirecting to login');
+          router.push('/admin/login');
+          return;
+        }
+
+        // Verify token is valid before making API call
+        if (!adminAPI.isAuthenticated()) {
+          console.log('Token invalid, redirecting to login');
+          router.push('/admin/login');
+          return;
+        }
+
+        // Add small delay to ensure localStorage is fully synced
+        await new Promise(resolve => setTimeout(resolve, 50));
+
+        if (!mounted) return;
+
+        // Load stats
         const data = await adminAPI.getOverviewStats();
+
+        if (!mounted) return;
+
         setStats(data);
+        setError("");
+
+        // Preload advanced analytics (non-blocking)
+        (async () => {
+          try {
+            const mi = await adminAPI.getMentorImpact(15);
+            if (mounted) setMentorImpact(mi.mentors);
+          } catch (e) {
+            console.warn('Failed to preload mentor impact', e);
+          }
+        })();
+
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to load dashboard data");
+        console.error('Dashboard load error:', err);
+
+        if (!mounted) return;
+
+        const errorMessage = err instanceof Error ? err.message : "Failed to load dashboard data";
+        setError(errorMessage);
+
+        // If authentication error, redirect to login
+        if (errorMessage.includes('Unauthorized') || errorMessage.includes('token')) {
+          localStorage.removeItem('adminAuthToken');
+          router.push('/admin/login');
+        }
       } finally {
-        setLoading(false);
+        if (mounted) setLoading(false);
       }
     };
 
-    loadStats();
-    // Preload advanced analytics (non-blocking)
-    (async () => {
-      try {
-        const mi = await adminAPI.getMentorImpact(15);
-        setMentorImpact(mi.mentors);
-  } catch (e) { console.warn('Failed to preload mentor impact', e); }
-      // Mentee progress radar removed per request; skip preloading
-      // try {
-      //   const mp = await adminAPI.getMenteeProgress(15);
-      //   setMenteeProgress(mp.mentees);
-      // } catch (e) { console.warn('Failed to preload mentee progress', e); }
-    })();
-  }, []);
+    loadDashboardData();
+
+    // Cleanup function
+    return () => {
+      mounted = false;
+    };
+  }, [router]);
 
   // View button handlers
   const openUsersModal = async () => {
@@ -226,8 +269,8 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-          {/* Bottom Sections */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Bottom Sections */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* User Distribution */}
           <div className="bg-white rounded-xl p-6 shadow-lg">
             <div className="flex items-center space-x-3 mb-6">
