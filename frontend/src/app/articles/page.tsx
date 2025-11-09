@@ -6,6 +6,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Article as APIArticle, authAPI, Tag } from '@/lib/auth-api';
 import Layout from '@/components/Layout';
+import { Eye, X, Plus } from 'lucide-react';
 
 export default function ArticlesPage() {
   const [articles, setArticles] = useState<APIArticle[]>([]);
@@ -14,7 +15,8 @@ export default function ArticlesPage() {
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [userVotes, setUserVotes] = useState<Record<number, 'upvote' | 'downvote' | null>>({});
   const [searchQuery, setSearchQuery] = useState('');
-  
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+
   const searchParams = useSearchParams();
 
   useEffect(() => {
@@ -53,12 +55,12 @@ export default function ArticlesPage() {
   const handleVote = async (articleId: number, voteType: 'upvote' | 'downvote') => {
     try {
       await authAPI.voteOnArticle(articleId, voteType);
-      
+
       // Update user vote state
       const currentVote = userVotes[articleId];
       const newVote = currentVote === voteType ? null : voteType;
       setUserVotes(prev => ({ ...prev, [articleId]: newVote }));
-      
+
       // Refresh articles to get updated vote counts
       fetchArticles(selectedCategory === 'All' ? undefined : selectedCategory);
     } catch (error) {
@@ -79,18 +81,18 @@ export default function ArticlesPage() {
   const filteredArticles = articles.filter(article => {
     // Filter by category
     const categoryMatch = selectedCategory === 'All' || (
-      article.tags && article.tags.some(tag => 
+      article.tags && article.tags.some(tag =>
         tag.toLowerCase().includes(selectedCategory.toLowerCase())
       )
     );
-    
+
     // Filter by search query
     const searchMatch = searchQuery === '' || (
       article.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       article.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
       article.authorName.toLowerCase().includes(searchQuery.toLowerCase())
     );
-    
+
     return categoryMatch && searchMatch;
   });
 
@@ -107,7 +109,7 @@ export default function ArticlesPage() {
     if (article.imageUrls && article.imageUrls.length > 0) {
       return article.imageUrls[0];
     }
-    
+
     // Fallback to placeholder images for variety
     const images = [
       'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80', // Programming
@@ -122,8 +124,8 @@ export default function ArticlesPage() {
   if (loading) {
     return (
       <Layout>
-        <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+        <div className="flex justify-center items-center h-64" style={{ backgroundColor: 'var(--color-neutral-dark)' }}>
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2" style={{ borderColor: 'var(--color-primary)' }}></div>
         </div>
       </Layout>
     );
@@ -131,160 +133,248 @@ export default function ArticlesPage() {
 
   return (
     <Layout>
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-4xl font-bold text-gray-900">Articles</h1>
-          <Link href="/create-article">
-            <button className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors font-medium">
-              ➕ Create a Post
-            </button>
-          </Link>
-        </div>
-
-        {/* Search Bar */}
-        <div className="mb-6">
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-              <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-            </div>
-            <input
-              type="text"
-              placeholder="Search articles by title, content, or author..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="block w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-            />
-          </div>
-        </div>
-
-        {/* Category Filter */}
-        <div className="mb-8">
-          <div className="flex flex-wrap gap-3">
-            <button
-              onClick={() => handleCategoryChange('All')}
-              className={`px-6 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
-                selectedCategory === 'All'
-                  ? 'bg-blue-600 text-white shadow-lg'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:shadow-md'
-              }`}
-            >
-              All
-            </button>
-            {categories.map((category) => (
+      <div className="min-h-screen" style={{ backgroundColor: 'var(--color-neutral-dark)' }}>
+        <div className="max-w-7xl mx-auto px-6 py-8">
+          <div className="flex justify-between items-center mb-8">
+            <h1 className="text-4xl font-bold" style={{ color: 'var(--color-tertiary)' }}>Articles</h1>
+            <Link href="/create-article">
               <button
-                key={category.name}
-                onClick={() => handleCategoryChange(category.name)}
-                className={`px-6 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
-                  selectedCategory === category.name
-                    ? 'bg-blue-600 text-white shadow-lg'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:shadow-md'
-                }`}
+                className="px-6 py-3 flex flex-row justify-center items-center gap-1 rounded-lg transition-colors font-medium text-white hover:opacity-90"
+                style={{ backgroundColor: 'var(--color-primary)' }}
               >
-                {category.name} ({category.count})
+                {/* <Plus className="w-4 h-4 text-black drop-shadow-lg" />*/} Create a Post
               </button>
-            ))}
+            </Link>
           </div>
-        </div>
 
-        {/* Articles Grid */}
-        <div className="grid gap-6">
-          {filteredArticles.map(article => (
-            <div key={article.id} className="bg-white rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden border border-gray-100">
-              <div className="flex">
-                {/* Content */}
-                <div className="flex-1 p-6">
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className="text-xs text-gray-500">📅 {new Date(article.createdAt).toLocaleDateString('en-US', { 
-                      year: 'numeric', 
-                      month: 'long', 
-                      day: 'numeric' 
-                    })}</span>
-                  </div>
-                  
-                  <h2 className="text-xl font-bold text-gray-900 mb-3 leading-tight">
-                    <a href={`/article/${article.id}`} className="hover:text-blue-600 transition-colors">
-                      {article.title}
-                    </a>
-                  </h2>
-                  
-                  <p className="text-gray-600 mb-4 line-clamp-3 leading-relaxed">
-                    {article.content.replace(/[#*`]/g, '').substring(0, 180)}...
-                  </p>
-                  
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <span className="px-3 py-1 bg-blue-50 text-blue-700 text-xs font-medium rounded-full">
-                        {getCategoryFromTitle(article.title)}
-                      </span>
-                      <span className="px-3 py-1 bg-green-50 text-green-700 text-xs font-medium rounded-full">
-                        By {article.authorName}
+          {/* Search Bar */}
+          <div className="mb-6">
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <svg className="h-5 w-5" style={{ color: 'var(--color-tertiary-light)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
+              <input
+                type="text"
+                placeholder="Search articles by title, content, or author..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="block w-full pl-12 pr-4 py-3 border rounded-lg leading-5 placeholder-gray-500 focus:outline-none focus:ring-2 transition-all"
+                style={{
+                  backgroundColor: 'var(--color-neutral)',
+                  borderColor: 'var(--color-surface-dark)',
+                  color: 'var(--color-tertiary)'
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Category Filter */}
+          <div className="mb-8">
+            <div className="flex flex-wrap gap-3">
+              <button
+                onClick={() => handleCategoryChange('All')}
+                className={`px-6 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${selectedCategory === 'All' ? 'shadow-md' : 'hover:bg-opacity-10'
+                  }`}
+                style={{
+                  backgroundColor: selectedCategory === 'All' ? 'var(--color-primary)' : 'var(--color-surface)',
+                  color: selectedCategory === 'All' ? 'var(--color-neutral)' : 'var(--color-secondary)'
+                }}
+              >
+                All
+              </button>
+              {categories.map((category) => (
+                <button
+                  key={category.name}
+                  onClick={() => handleCategoryChange(category.name)}
+                  className={`px-6 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${selectedCategory === category.name ? 'shadow-md' : 'hover:bg-opacity-10'
+                    }`}
+                  style={{
+                    backgroundColor: selectedCategory === category.name ? 'var(--color-primary)' : 'var(--color-surface)',
+                    color: selectedCategory === category.name ? 'var(--color-neutral)' : 'var(--color-secondary)'
+                  }}
+                >
+                  {category.name} ({category.count})
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Articles Grid */}
+          <div className="grid gap-6">
+            {filteredArticles.map(article => (
+              <Link 
+                key={article.id}
+                href={`/article/${article.id}`}
+                className="rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden border block"
+                style={{
+                  backgroundColor: 'var(--color-neutral)',
+                  borderColor: 'var(--color-surface-dark)'
+                }}
+              >
+                <div className="flex">
+                  {/* Content */}
+                  <div className="flex-1 p-6">
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="text-xs" style={{ color: 'var(--color-tertiary-light)' }}>
+                        📅 {new Date(article.createdAt).toLocaleDateString('en-US', {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric'
+                        })}
                       </span>
                     </div>
-                    
-                    <div className="flex items-center gap-6">
-                      {/* Vote Buttons with SVG Arrows */}
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => handleVote(article.id, 'upvote')}
-                          className={`p-2 rounded-lg transition-colors ${
-                            userVotes[article.id] === 'upvote'
-                              ? 'text-purple-700 bg-purple-100 border-2 border-purple-300'
-                              : 'text-gray-400 hover:text-purple-500 hover:bg-purple-50'
-                          }`}
-                          title="Upvote article"
-                          aria-label="Upvote article"
+
+                    <h2 className="text-xl font-bold mb-3 leading-tight" style={{ color: 'var(--color-tertiary)' }}>
+                      {article.title}
+                    </h2>
+
+                    <p className="mb-4 line-clamp-3 leading-relaxed" style={{ color: 'var(--color-tertiary-light)' }}>
+                      {article.content.replace(/[#*`]/g, '').substring(0, 180)}...
+                    </p>
+
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <span
+                          className="px-3 py-1 text-xs font-medium rounded-full"
+                          style={{
+                            backgroundColor: 'var(--color-surface-light)',
+                            color: 'var(--color-secondary)'
+                          }}
                         >
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-                          </svg>
-                        </button>
-                        <span className="text-sm font-medium text-gray-700 min-w-[2rem] text-center">
-                          {article.upvotes - article.downvotes}
+                          {getCategoryFromTitle(article.title)}
                         </span>
-                        <button
-                          onClick={() => handleVote(article.id, 'downvote')}
-                          className={`p-2 rounded-lg transition-colors ${
-                            userVotes[article.id] === 'downvote'
-                              ? 'text-red-700 bg-red-100 border-2 border-red-300'
-                              : 'text-gray-400 hover:text-red-500 hover:bg-red-50'
-                          }`}
-                          title="Downvote article"
-                          aria-label="Downvote article"
+                        <span
+                          className="px-3 py-1 text-xs font-medium rounded-full"
+                          style={{
+                            backgroundColor: 'var(--color-primary)',
+                            color: 'var(--color-neutral)'
+                          }}
                         >
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                          </svg>
-                        </button>
+                          By {article.authorName}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-6">
+                        {/* Vote Buttons */}
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              handleVote(article.id, 'upvote');
+                            }}
+                            className={`p-2 rounded-lg transition-colors ${userVotes[article.id] === 'upvote'
+                                ? 'border-2'
+                                : ''
+                              }`}
+                            style={{
+                              color: userVotes[article.id] === 'upvote' ? '#7c3aed' : 'var(--color-tertiary-light)',
+                              backgroundColor: userVotes[article.id] === 'upvote' ? '#f3e8ff' : 'transparent',
+                              borderColor: userVotes[article.id] === 'upvote' ? '#c4b5fd' : 'transparent'
+                            }}
+                            title="Upvote article"
+                            aria-label="Upvote article"
+                          >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                            </svg>
+                          </button>
+                          <span className="text-sm font-medium min-w-[2rem] text-center" style={{ color: 'var(--color-tertiary)' }}>
+                            {article.upvotes - article.downvotes}
+                          </span>
+                          <button
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              handleVote(article.id, 'downvote');
+                            }}
+                            className={`p-2 rounded-lg transition-colors ${userVotes[article.id] === 'downvote'
+                                ? 'border-2'
+                                : ''
+                              }`}
+                            style={{
+                              color: userVotes[article.id] === 'downvote' ? '#dc2626' : 'var(--color-tertiary-light)',
+                              backgroundColor: userVotes[article.id] === 'downvote' ? '#fee2e2' : 'transparent',
+                              borderColor: userVotes[article.id] === 'downvote' ? '#fca5a5' : 'transparent'
+                            }}
+                            title="Downvote article"
+                            aria-label="Downvote article"
+                          >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Image with Preview */}
+                  <div
+                    className="w-48 h-40 bg-gradient-to-br from-teal-100 to-emerald-100 flex-shrink-0 relative group"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      const imageUrl = getArticleImage(article);
+                      if (imageUrl) setPreviewImage(imageUrl);
+                    }}
+                  >
+                    <Image
+                      src={getArticleImage(article)}
+                      alt={article.title}
+                      width={192}
+                      height={160}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = 'none';
+                      }}
+                    />
+                    {/* Hover overlay */}
+                    <div className="absolute inset-0 group-hover:bg-opacity-40 transition-all duration-300 flex items-center justify-center cursor-pointer">
+                      <div className="transform scale-0 group-hover:scale-100 transition-transform duration-200">
+                        <Eye className="w-8 h-8 text-white drop-shadow-lg" />
+                        <p className="text-white text-xs font-semibold mt-1 text-center">Preview</p>
                       </div>
                     </div>
                   </div>
                 </div>
-                
-                {/* Image */}
-                <div className="w-48 h-40 bg-gradient-to-br from-blue-400 to-purple-500 flex-shrink-0">
-                  <Image 
-                    src={getArticleImage(article)}
-                    alt={article.title}
-                    width={192}
-                    height={160}
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      // Fallback to gradient background
-                      (e.target as HTMLImageElement).style.display = 'none';
-                    }}
-                  />
-                </div>
-              </div>
+              </Link>
+            ))}
+          </div>
+
+          {filteredArticles.length === 0 && (
+            <div className="text-center py-16">
+              <div className="text-xl font-medium" style={{ color: 'var(--color-tertiary)' }}>📄 No articles found</div>
+              <p className="mt-2" style={{ color: 'var(--color-tertiary-light)' }}>Try adjusting your search or filter criteria</p>
             </div>
-          ))}
+          )}
         </div>
 
-        {filteredArticles.length === 0 && (
-          <div className="text-center py-16">
-            <div className="text-gray-500 text-xl font-medium">📄 No articles found</div>
-            <p className="text-gray-400 mt-2">Try adjusting your search or filter criteria</p>
+        {/* Image Preview Modal */}
+        {previewImage && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-90 animate-fadeIn"
+            onClick={() => setPreviewImage(null)}
+          >
+            <button
+              onClick={() => setPreviewImage(null)}
+              className="absolute top-4 right-4 p-2 bg-white/10 hover:bg-white/20 rounded-full transition-all duration-200 hover:rotate-90"
+              aria-label="Close preview"
+            >
+              <X className="w-6 h-6 text-white" />
+            </button>
+            <div className="max-w-7xl max-h-[90vh] p-4">
+              <Image
+                src={previewImage}
+                alt="Preview"
+                width={1200}
+                height={800}
+                className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl"
+                onClick={(e) => e.stopPropagation()}
+              />
+            </div>
           </div>
         )}
       </div>

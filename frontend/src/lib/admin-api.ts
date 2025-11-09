@@ -109,6 +109,142 @@ export interface CommunityPost {
   };
 }
 
+export interface Tag {
+  id: number;
+  name: string;
+  description: string | null;
+  createdAt: string;
+  updatedAt: string;
+  _count: {
+    questions: number;
+    articles: number;
+    communityPosts: number;
+  };
+}
+
+export interface MentorshipRequest {
+  id: number;
+  status: 'pending' | 'accepted' | 'rejected';
+  requestMessage: string | null;
+  createdAt: string;
+  updatedAt: string;
+  mentor: {
+    id: number;
+    name: string;
+    email: string;
+    avatarUrl: string | null;
+    jobTitle: string | null;
+    department: string | null;
+    skills: string[];
+    reputation: number;
+    _count: {
+      mentorConnections: number;
+      questions: number;
+      answers: number;
+      articles: number;
+    };
+  };
+  mentee: {
+    id: number;
+    name: string;
+    email: string;
+    avatarUrl: string | null;
+    jobTitle: string | null;
+    department: string | null;
+    skills: string[];
+    reputation: number;
+    _count: {
+      menteeConnections: number;
+      questions: number;
+      answers: number;
+      articles: number;
+    };
+  };
+}
+
+export interface Connection {
+  id: number;
+  acceptedAt: string;
+  updatedAt: string;
+  mentor: {
+    id: number;
+    name: string;
+    email: string;
+    avatarUrl: string | null;
+    jobTitle: string | null;
+    department: string | null;
+    skills: string[];
+    reputation: number;
+    _count: {
+      mentorConnections: number;
+      questions: number;
+      answers: number;
+      articles: number;
+    };
+  };
+  mentee: {
+    id: number;
+    name: string;
+    email: string;
+    avatarUrl: string | null;
+    jobTitle: string | null;
+    department: string | null;
+    skills: string[];
+    reputation: number;
+    _count: {
+      menteeConnections: number;
+      questions: number;
+      answers: number;
+      articles: number;
+    };
+  };
+  conversation?: {
+    id: number;
+    createdAt: string;
+    updatedAt: string;
+    _count: {
+      messages: number;
+    };
+  };
+  metrics?: {
+    messageCount: number;
+    lastMessageDate: string | null;
+    lastMessageSender: string | null;
+    lastMessage: string | null;
+    daysSinceConnection: number;
+    messagesPerWeek: number;
+    engagementLevel: 'high' | 'medium' | 'low';
+  };
+}
+
+export interface MentorshipStats {
+  requests: {
+    total: number;
+    pending: number;
+    accepted: number;
+    rejected: number;
+    acceptanceRate: number;
+  };
+  connections: {
+    total: number;
+    active: number;
+    avgMessagesPerConnection: number;
+  };
+  messages: {
+    total: number;
+  };
+  topMentors: Array<{
+    id: number;
+    name: string;
+    email: string;
+    avatarUrl: string | null;
+    reputation: number;
+    _count: {
+      mentorConnections: number;
+    };
+  }>;
+}
+
 export interface OverviewStats {
   users: {
     total: number;
@@ -624,6 +760,78 @@ class AdminAPI {
     return response.json();
   }
 
+  // ==================== Tags Management ====================
+
+  async getTags(): Promise<{ tags: Tag[] }> {
+    const response = await fetch(`${ADMIN_API_BASE_URL}/tags`, {
+      headers: this.getHeaders(true),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to fetch tags');
+    }
+
+    return response.json();
+  }
+
+  async getTagById(tagId: number): Promise<{ tag: Tag }> {
+    const response = await fetch(`${ADMIN_API_BASE_URL}/tags/${tagId}`, {
+      headers: this.getHeaders(true),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to fetch tag');
+    }
+
+    return response.json();
+  }
+
+  async createTag(data: { name: string; description?: string }): Promise<{ message: string; tag: Tag }> {
+    const response = await fetch(`${ADMIN_API_BASE_URL}/tags`, {
+      method: 'POST',
+      headers: this.getHeaders(true),
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to create tag');
+    }
+
+    return response.json();
+  }
+
+  async updateTag(tagId: number, data: { name?: string; description?: string }): Promise<{ message: string; tag: Tag }> {
+    const response = await fetch(`${ADMIN_API_BASE_URL}/tags/${tagId}`, {
+      method: 'PUT',
+      headers: this.getHeaders(true),
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to update tag');
+    }
+
+    return response.json();
+  }
+
+  async deleteTag(tagId: number): Promise<{ message: string }> {
+    const response = await fetch(`${ADMIN_API_BASE_URL}/tags/${tagId}`, {
+      method: 'DELETE',
+      headers: this.getHeaders(true),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to delete tag');
+    }
+
+    return response.json();
+  }
+
   // ==================== Analytics ====================
   
   async getOverviewStats(): Promise<OverviewStats> {
@@ -727,6 +935,80 @@ class AdminAPI {
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.error || 'Failed to fetch mentorship stats');
+    }
+
+    return response.json();
+  }
+
+  // ==================== Mentorship Management ====================
+
+  async getMentorshipRequests(status?: 'pending' | 'accepted' | 'rejected' | 'all'): Promise<{ requests: MentorshipRequest[] }> {
+    const params = new URLSearchParams();
+    if (status) {
+      params.append('status', status);
+    }
+
+    const response = await fetch(`${ADMIN_API_BASE_URL}/mentorship/requests?${params}`, {
+      headers: this.getHeaders(true),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to fetch mentorship requests');
+    }
+
+    return response.json();
+  }
+
+  async getMentorshipConnections(): Promise<{ connections: Connection[] }> {
+    const response = await fetch(`${ADMIN_API_BASE_URL}/mentorship/connections`, {
+      headers: this.getHeaders(true),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to fetch mentorship connections');
+    }
+
+    return response.json();
+  }
+
+  async getMentorshipOverview(): Promise<{ stats: MentorshipStats }> {
+    const response = await fetch(`${ADMIN_API_BASE_URL}/mentorship/stats`, {
+      headers: this.getHeaders(true),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to fetch mentorship overview stats');
+    }
+
+    return response.json();
+  }
+
+  async deleteMentorshipRequest(requestId: number): Promise<{ message: string }> {
+    const response = await fetch(`${ADMIN_API_BASE_URL}/mentorship/requests/${requestId}`, {
+      method: 'DELETE',
+      headers: this.getHeaders(true),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to delete mentorship request');
+    }
+
+    return response.json();
+  }
+
+  async deleteMentorshipConnection(connectionId: number): Promise<{ message: string }> {
+    const response = await fetch(`${ADMIN_API_BASE_URL}/mentorship/connections/${connectionId}`, {
+      method: 'DELETE',
+      headers: this.getHeaders(true),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to delete mentorship connection');
     }
 
     return response.json();

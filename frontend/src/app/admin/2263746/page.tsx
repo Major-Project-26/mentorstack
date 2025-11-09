@@ -97,7 +97,7 @@ export default function AdminLoginPage() {
           <p className="text-emerald-700 font-medium">
             MentorStack Administration
           </p>
-          <div className="absolute top-4 right-4 w-24 h-24 rounded-full bg-gradient-to-tr from-red-500 to-orange-500 opacity-10" />
+          {/* <div className="absolute top-4 right-4 w-24 h-24 rounded-full bg-gradient-to-tr from-red-500 to-orange-500 opacity-10" /> */}
         </div>
       </div>
     </div>

@@ -7,7 +7,7 @@ import { authAPI, Article } from "../../../lib/auth-api";
 import BookmarkButton from "@/components/BookmarkButton";
 import ArticleImageUpload from "@/components/ArticleImageUpload";
 import Layout from "../../../components/Layout";
-import { Edit, Trash2, Save, XCircle } from "lucide-react";
+import { Edit, Trash2, Save, XCircle, Eye, X } from "lucide-react";
 
 export default function ArticleView() {
     const { id } = useParams();
@@ -25,6 +25,7 @@ export default function ArticleView() {
     const [existingImageUrls, setExistingImageUrls] = useState<string[]>([]);
     const [tagInput, setTagInput] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [previewImage, setPreviewImage] = useState<string | null>(null);
 
     const fetchArticle = useCallback(async () => {
             try {
@@ -224,10 +225,10 @@ export default function ArticleView() {
     if (loading) {
         return (
             <Layout>
-                <div className="min-h-screen bg-[var(--color-neutral-dark)] flex items-center justify-center">
+                <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--color-neutral-dark)' }}>
                     <div className="text-center">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500 mx-auto"></div>
-                        <p className="text-[var(--color-tertiary)] mt-4">Loading article...</p>
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 mx-auto" style={{ borderColor: 'var(--color-primary)' }}></div>
+                        <p className="mt-4" style={{ color: 'var(--color-tertiary)' }}>Loading article...</p>
                     </div>
                 </div>
             </Layout>
@@ -237,17 +238,18 @@ export default function ArticleView() {
     if (error || !article) {
         return (
             <Layout>
-                <div className="min-h-screen bg-[var(--color-neutral-dark)] flex items-center justify-center">
+                <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--color-neutral-dark)' }}>
                     <div className="text-center">
                         <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
                             <span className="text-2xl">⚠️</span>
                         </div>
-                        <h3 className="text-xl font-semibold text-[var(--color-tertiary)] mb-2">
+                        <h3 className="text-xl font-semibold mb-2" style={{ color: 'var(--color-tertiary)' }}>
                             {error || "Article not found"}
                         </h3>
                         <button
                             onClick={() => router.push("/articles")}
-                            className="px-4 py-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition"
+                            className="px-4 py-2 text-white rounded-lg transition hover:opacity-90"
+                            style={{ backgroundColor: 'var(--color-primary)' }}
                         >
                             Back to Articles
                         </button>
@@ -259,12 +261,13 @@ export default function ArticleView() {
 
     return (
         <Layout>
-            <div className="min-h-screen bg-white">
+            <div className="min-h-screen" style={{ backgroundColor: 'var(--color-neutral-dark)' }}>
                 <div className="max-w-4xl mx-auto p-6">
                     {/* Back Button */}
                     <button
                         onClick={() => router.back()}
-                        className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6 transition-colors"
+                        className="flex items-center gap-2 mb-6 transition-colors hover:opacity-80"
+                        style={{ color: 'var(--color-tertiary)' }}
                     >
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -273,10 +276,19 @@ export default function ArticleView() {
                     </button>
 
                     {/* Article Header */}
-                    <article className="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm">
-                        {/* Featured Image */}
+                    <article 
+                        className="rounded-lg border overflow-hidden shadow-sm"
+                        style={{
+                            backgroundColor: 'var(--color-neutral)',
+                            borderColor: 'var(--color-surface-dark)'
+                        }}
+                    >
+                        {/* Featured Image with Preview */}
                         {article.imageUrls && article.imageUrls.length > 0 && (
-                            <div className="relative h-64 md:h-80">
+                            <div 
+                                className="relative h-64 md:h-80 cursor-pointer group"
+                                onClick={() => setPreviewImage(article.imageUrls![0])}
+                            >
                                 <Image
                                     src={article.imageUrls[0]}
                                     alt={article.title}
@@ -284,6 +296,13 @@ export default function ArticleView() {
                                     className="object-cover"
                                 />
                                 <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+                                {/* Hover overlay for image preview */}
+                                <div className="absolute inset-0  group-hover:bg-opacity-40 transition-all duration-300 flex items-center justify-center">
+                                    <div className="transform scale-0 group-hover:scale-100 transition-transform duration-200">
+                                        <Eye className="w-12 h-12 text-white drop-shadow-lg" />
+                                        <p className="text-white text-sm font-semibold mt-2 text-center">Click to preview</p>
+                                    </div>
+                                </div>
                             </div>
                         )}
 
@@ -292,7 +311,7 @@ export default function ArticleView() {
                             <div className="flex items-center justify-between mb-6">
                                 <div className="flex items-center gap-4">
                                     {article.authorAvatar ? (
-                                        <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-emerald-500">
+                                        <div className="w-12 h-12 rounded-full overflow-hidden border-2" style={{ borderColor: 'var(--color-primary)' }}>
                                             <Image
                                                 src={article.authorAvatar}
                                                 alt={article.authorName}
@@ -302,13 +321,18 @@ export default function ArticleView() {
                                             />
                                         </div>
                                     ) : (
-                                        <div className="w-12 h-12 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-full flex items-center justify-center text-white font-semibold text-lg">
+                                        <div 
+                                            className="w-12 h-12 bg-gradient-to-br rounded-full flex items-center justify-center text-white font-semibold text-lg"
+                                            style={{
+                                                background: 'linear-gradient(to bottom right, var(--color-primary), #059669)'
+                                            }}
+                                        >
                                             {article.authorName.charAt(0).toUpperCase()}
                                         </div>
                                     )}
                                     <div>
-                                        <h3 className="text-gray-900 font-semibold">{article.authorName}</h3>
-                                        <div className="flex items-center gap-3 text-sm text-gray-600">
+                                        <h3 className="font-semibold" style={{ color: 'var(--color-tertiary)' }}>{article.authorName}</h3>
+                                        <div className="flex items-center gap-3 text-sm" style={{ color: 'var(--color-tertiary-light)' }}>
                                             <span>{formatDate(article.createdAt)}</span>
                                         </div>
                                     </div>
@@ -318,14 +342,22 @@ export default function ArticleView() {
                                     <div className="flex gap-2">
                                         <button
                                             onClick={handleEditArticle}
-                                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                            className="p-2 rounded-lg transition-colors hover:opacity-80"
+                                            style={{
+                                                color: 'var(--color-primary)',
+                                                backgroundColor: 'var(--color-surface-light)'
+                                            }}
                                             title="Edit article"
                                         >
                                             <Edit size={20} />
                                         </button>
                                         <button
                                             onClick={handleDeleteArticle}
-                                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                            className="p-2 rounded-lg transition-colors"
+                                            style={{
+                                                color: '#dc2626',
+                                                backgroundColor: '#fee2e2'
+                                            }}
                                             title="Delete article"
                                         >
                                             <Trash2 size={20} />
@@ -338,22 +370,32 @@ export default function ArticleView() {
                             {isEditing ? (
                                 <div className="mb-6 space-y-4">
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">Title</label>
+                                        <label className="block text-sm font-medium mb-2" style={{ color: 'var(--color-secondary)' }}>Title</label>
                                         <input
                                             type="text"
                                             value={editTitle}
                                             onChange={(e) => setEditTitle(e.target.value)}
-                                            className="w-full text-2xl font-bold text-gray-900 border-2 border-gray-300 rounded-lg p-3 focus:outline-none focus:border-blue-500"
+                                            className="w-full text-2xl font-bold border-2 rounded-lg p-3 focus:outline-none"
+                                            style={{
+                                                backgroundColor: 'var(--color-neutral)',
+                                                borderColor: 'var(--color-surface-dark)',
+                                                color: 'var(--color-tertiary)'
+                                            }}
                                             placeholder="Article title"
                                         />
                                     </div>
                                     
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">Content (Markdown supported)</label>
+                                        <label className="block text-sm font-medium mb-2" style={{ color: 'var(--color-secondary)' }}>Content (Markdown supported)</label>
                                         <textarea
                                             value={editContent}
                                             onChange={(e) => setEditContent(e.target.value)}
-                                            className="w-full p-4 border-2 border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                            className="w-full p-4 border-2 rounded-lg resize-none focus:ring-2"
+                                            style={{
+                                                backgroundColor: 'var(--color-neutral)',
+                                                borderColor: 'var(--color-surface-dark)',
+                                                color: 'var(--color-tertiary)'
+                                            }}
                                             rows={20}
                                             placeholder="Article content (Markdown supported)"
                                         />
@@ -415,8 +457,8 @@ export default function ArticleView() {
 
                                     {/* Image Upload Section */}
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                                            Images <span className="text-sm text-gray-500">(Optional)</span>
+                                        <label className="block text-sm font-medium mb-2" style={{ color: 'var(--color-secondary)' }}>
+                                            Images <span className="text-sm" style={{ color: 'var(--color-tertiary-light)' }}>(Optional)</span>
                                         </label>
                                         <ArticleImageUpload
                                             onImagesChange={setEditImages}
@@ -430,7 +472,8 @@ export default function ArticleView() {
                                         <button
                                             onClick={handleSaveArticle}
                                             disabled={isSubmitting || !editTitle.trim() || !editContent.trim()}
-                                            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
+                                            className="flex items-center gap-2 px-4 py-2 text-white rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+                                            style={{ backgroundColor: 'var(--color-primary)' }}
                                         >
                                             <Save size={18} />
                                             {isSubmitting ? 'Saving...' : 'Save Changes'}
@@ -438,7 +481,11 @@ export default function ArticleView() {
                                         <button
                                             onClick={() => setIsEditing(false)}
                                             disabled={isSubmitting}
-                                            className="flex items-center gap-2 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 disabled:opacity-50"
+                                            className="flex items-center gap-2 px-4 py-2 rounded-lg transition disabled:opacity-50"
+                                            style={{
+                                                backgroundColor: 'var(--color-surface)',
+                                                color: 'var(--color-secondary)'
+                                            }}
                                         >
                                             <XCircle size={18} />
                                             Cancel
@@ -447,22 +494,25 @@ export default function ArticleView() {
                                 </div>
                             ) : (
                                 <>
-                                    <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6 leading-tight">
+                                    <h1 className="text-3xl md:text-4xl font-bold mb-6 leading-tight" style={{ color: 'var(--color-tertiary)' }}>
                                         {article.title}
                                     </h1>
 
                                     {/* Article Actions */}
-                                    <div className="flex items-center justify-between mb-8 py-4 border-y border-gray-200">
+                                    <div className="flex items-center justify-between mb-8 py-4 border-y" style={{ borderColor: 'var(--color-surface-dark)' }}>
                                         <div className="flex items-center gap-4">
                                             {/* Vote Buttons */}
                                             <div className="flex items-center gap-2">
                                                 <button
                                                     onClick={() => handleVote("upvote")}
                                                     className={`p-2 rounded-lg transition-colors ${
-                                                        userVote === "upvote"
-                                                            ? "text-purple-700 bg-purple-100 border-2 border-purple-300"
-                                                            : "text-gray-400 hover:text-purple-500 hover:bg-purple-50"
+                                                        userVote === "upvote" ? "border-2" : ""
                                                     }`}
+                                                    style={{
+                                                        color: userVote === "upvote" ? '#7c3aed' : 'var(--color-tertiary-light)',
+                                                        backgroundColor: userVote === "upvote" ? '#f3e8ff' : 'transparent',
+                                                        borderColor: userVote === "upvote" ? '#c4b5fd' : 'transparent'
+                                                    }}
                                                     title="Upvote article"
                                                     aria-label="Upvote article"
                                                 >
@@ -470,16 +520,19 @@ export default function ArticleView() {
                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
                                                     </svg>
                                                 </button>
-                                                <span className="text-sm font-medium text-gray-700 min-w-[2rem] text-center">
+                                                <span className="text-sm font-medium min-w-[2rem] text-center" style={{ color: 'var(--color-tertiary)' }}>
                                                     {article.upvotes - article.downvotes}
                                                 </span>
                                                 <button
                                                     onClick={() => handleVote("downvote")}
                                                     className={`p-2 rounded-lg transition-colors ${
-                                                        userVote === "downvote"
-                                                            ? "text-red-700 bg-red-100 border-2 border-red-300"
-                                                            : "text-gray-400 hover:text-red-500 hover:bg-red-50"
+                                                        userVote === "downvote" ? "border-2" : ""
                                                     }`}
+                                                    style={{
+                                                        color: userVote === "downvote" ? '#dc2626' : 'var(--color-tertiary-light)',
+                                                        backgroundColor: userVote === "downvote" ? '#fee2e2' : 'transparent',
+                                                        borderColor: userVote === "downvote" ? '#fca5a5' : 'transparent'
+                                                    }}
                                                     title="Downvote article"
                                                     aria-label="Downvote article"
                                                 >
@@ -501,7 +554,11 @@ export default function ArticleView() {
                                                 {article.tags.map((tag, index) => (
                                                     <span
                                                         key={index}
-                                                        className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium"
+                                                        className="px-3 py-1 rounded-full text-sm font-medium"
+                                                        style={{
+                                                            backgroundColor: 'var(--color-surface-light)',
+                                                            color: 'var(--color-secondary)'
+                                                        }}
                                                     >
                                                         {tag}
                                                     </span>
@@ -512,7 +569,8 @@ export default function ArticleView() {
 
                                     {/* Article Content */}
                                     <div 
-                                        className="prose prose-slate prose-invert max-w-none"
+                                        className="prose prose-slate max-w-none"
+                                        style={{ color: 'var(--color-tertiary)' }}
                                         dangerouslySetInnerHTML={{ __html: renderContent(article.content) }}
                                     />
                                 </>
@@ -520,9 +578,33 @@ export default function ArticleView() {
 
                         </div>
                     </article>
-
-                    
                 </div>
+
+                {/* Image Preview Modal */}
+                {previewImage && (
+                    <div 
+                        className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-90 animate-fadeIn"
+                        onClick={() => setPreviewImage(null)}
+                    >
+                        <button
+                            onClick={() => setPreviewImage(null)}
+                            className="absolute top-4 right-4 p-2 bg-white/10 hover:bg-white/20 rounded-full transition-all duration-200 hover:rotate-90"
+                            aria-label="Close preview"
+                        >
+                            <X className="w-6 h-6 text-white" />
+                        </button>
+                        <div className="max-w-7xl max-h-[90vh] p-4">
+                            <Image
+                                src={previewImage}
+                                alt="Preview"
+                                width={1200}
+                                height={800}
+                                className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl"
+                                onClick={(e) => e.stopPropagation()}
+                            />
+                        </div>
+                    </div>
+                )}
             </div>
         </Layout>
     );
