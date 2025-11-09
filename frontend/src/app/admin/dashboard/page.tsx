@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from "react";
@@ -270,7 +269,6 @@ export default function AdminDashboard() {
 
         {/* Bottom Sections */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* User Distribution */}
           <div className="bg-white rounded-xl p-6 shadow-lg">
             <div className="flex items-center space-x-3 mb-6">
               <span className="text-2xl">🎯</span>
@@ -309,8 +307,6 @@ export default function AdminDashboard() {
               </div>
             </div>
           </div>
-
-          {/* Mentorship Metrics */}
           <div className="bg-white rounded-xl p-6 shadow-lg">
             <div className="flex items-center space-x-3 mb-6">
               <span className="text-2xl">🏆</span>
@@ -349,6 +345,7 @@ export default function AdminDashboard() {
           </div>
         </div>
         <div className="mt-10 grid grid-cols-1 xl:grid-cols-1 gap-8">
+          {/* Mentor Impact Board */}
           <div className="bg-white rounded-xl p-6 shadow-lg">
             <div className="flex items-center space-x-3 mb-6">
               <Gauge className="w-6 h-6 text-teal-600" />
