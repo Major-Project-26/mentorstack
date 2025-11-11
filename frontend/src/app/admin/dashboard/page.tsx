@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from "react";
@@ -173,7 +172,6 @@ export default function AdminDashboard() {
   return (
     <AdminLayout>
       <div className="min-h-screen bg-gray-50">
-        {/* Welcome Header */}
         <div className="bg-gradient-to-r from-teal-500 to-teal-600 text-white rounded-lg p-8 mb-8">
           <div className="flex items-center justify-between">
             <div>
@@ -271,7 +269,6 @@ export default function AdminDashboard() {
 
         {/* Bottom Sections */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* User Distribution */}
           <div className="bg-white rounded-xl p-6 shadow-lg">
             <div className="flex items-center space-x-3 mb-6">
               <span className="text-2xl">🎯</span>
@@ -310,8 +307,6 @@ export default function AdminDashboard() {
               </div>
             </div>
           </div>
-
-          {/* Mentorship Metrics */}
           <div className="bg-white rounded-xl p-6 shadow-lg">
             <div className="flex items-center space-x-3 mb-6">
               <span className="text-2xl">🏆</span>
@@ -348,11 +343,7 @@ export default function AdminDashboard() {
               </div>
             </div>
           </div>
-
-          {/* Removed Platform Health per request */}
         </div>
-
-        {/* Advanced Analytics Row (Radar removed) */}
         <div className="mt-10 grid grid-cols-1 xl:grid-cols-1 gap-8">
           {/* Mentor Impact Board */}
           <div className="bg-white rounded-xl p-6 shadow-lg">
@@ -393,12 +384,8 @@ export default function AdminDashboard() {
               </table>
             </div>
           </div>
-
-          {/* Mentee Learning Progress Radar removed per request */}
         </div>
       </div>
-
-      {/* Modal System */}
       <AdminModals
         isUsersModalOpen={showUsersModal}
         setIsUsersModalOpen={setShowUsersModal}
