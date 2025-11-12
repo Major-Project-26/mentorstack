@@ -19,6 +19,13 @@ const RULES: Record<string, { points: number; description: string; dailyCap?: nu
   community_post_upvoted: { points: 5, description: 'Quality contribution' },
   community_post_downvoted: { points: -2, description: 'Spam prevention' },
   community_post_bookmarked: { points: 10, description: 'Valuable resource' }
+  ,
+  // Q&A
+  question_asked: { points: 10, description: 'Encourages asking' },
+  answer_posted: { points: 10, description: 'Encourages helping' },
+  answer_upvoted: { points: 5, description: 'Quality answer' },
+  answer_downvoted: { points: -2, description: 'Discourages bad answers' },
+  question_bookmarked: { points: 10, description: 'Useful content' }
 };
 
 export interface AwardResult {

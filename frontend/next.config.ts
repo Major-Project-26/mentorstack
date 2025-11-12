@@ -7,7 +7,8 @@ const nextConfig: NextConfig = {
       'via.placeholder.com',
       'localhost',
       'res.cloudinary.com',
-      'picsum.photos'
+      'picsum.photos',
+      'randomuser.me'
     ],
   },
 };

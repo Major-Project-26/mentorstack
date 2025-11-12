@@ -2,13 +2,14 @@ import express from 'express';
 import jwt from 'jsonwebtoken';
 import { prisma } from '../../lib/prisma';
 import { Role } from '@prisma/client';
+import { awardReputation } from '../../lib/reputation';
 
 const router = express.Router();
 
 // Middleware to verify JWT token
 const authenticateToken = (req: any, res: any, next: any) => {
   const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
+  const token = authHeader?.split(' ')[1];
 
   if (!token) {
     return res.status(401).json({ message: 'Access token required' });
@@ -75,19 +76,19 @@ router.get('/', async (req: any, res: any) => {
 // Get question by ID
 router.get('/:id', async (req: any, res: any) => {
   try {
-    const questionId = parseInt(req.params.id);
+  const questionId = Number.parseInt(req.params.id, 10);
     
     // Check for optional auth token to include user vote
     let currentUserId: number | null = null;
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
+  const authHeader = req.headers['authorization'];
+  const token = authHeader?.split(' ')[1];
 
     if (token) {
       try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret') as any;
         currentUserId = decoded.userId;
       } catch (err) {
-        // Ignore invalid token and continue without user vote
+        console.warn('Optional token verification failed in GET /questions/:id', err);
       }
     }
     
@@ -241,6 +242,14 @@ router.post('/', authenticateToken, async (req: any, res: any) => {
       }
     }
 
+    // Award reputation for asking a question
+    try {
+      await awardReputation(prisma as any, { userId, action: 'question_asked', entityType: 'question', entityId: question.id });
+    } catch (e) {
+      // Non-fatal: log and proceed
+      console.warn('Reputation award failed (question_asked):', e);
+    }
+
     // Fetch the complete question with tags
     const completeQuestion = await prisma.question.findUnique({
       where: { id: question.id },
@@ -288,7 +297,7 @@ router.post('/', authenticateToken, async (req: any, res: any) => {
 // Create answer for a question
 router.post('/:questionId/answers', authenticateToken, async (req: any, res: any) => {
   try {
-    const questionId = parseInt(req.params.questionId);
+    const questionId = Number.parseInt(req.params.questionId, 10);
     const { content } = req.body;
     const userId = req.user.userId; // Fixed: use userId from token
     const userRole = req.user.role;
@@ -340,6 +349,13 @@ router.post('/:questionId/answers', authenticateToken, async (req: any, res: any
       voteScore: 0
     };
 
+    // Award reputation for posting an answer
+    try {
+      await awardReputation(prisma as any, { userId, action: 'answer_posted', entityType: 'answer', entityId: answer.id });
+    } catch (e) {
+      console.warn('Reputation award failed (answer_posted):', e);
+    }
+
     res.status(201).json({ 
       message: 'Answer created successfully',
       answer: responseAnswer
@@ -356,8 +372,8 @@ router.post('/:questionId/answers', authenticateToken, async (req: any, res: any
 // Vote on an answer
 router.post('/:questionId/answers/:answerId/vote', authenticateToken, async (req: any, res: any) => {
   try {
-    const questionId = parseInt(req.params.questionId);
-    const answerId = parseInt(req.params.answerId);
+    const questionId = Number.parseInt(req.params.questionId, 10);
+    const answerId = Number.parseInt(req.params.answerId, 10);
     const { voteType } = req.body;
     const userId = req.user.userId;
 
@@ -393,13 +409,27 @@ router.post('/:questionId/answers/:answerId/vote', authenticateToken, async (req
         await prisma.answerVote.delete({
           where: { id: existingVote.id }
         });
+        // Reverse prior impact
+        const delta = existingVote.voteType === 'upvote' ? -5 : 2;
+        try {
+          await awardReputation(prisma as any, { userId: answer.authorId, action: existingVote.voteType === 'upvote' ? 'answer_upvoted' : 'answer_downvoted', overridePoints: delta, entityType: 'answer', entityId: answerId, bypassCap: true, customDescription: 'Vote removed' });
+        } catch (e) {
+          console.warn('Reputation reverse failed (vote toggle off):', e);
+        }
         return res.json({ message: 'Vote removed successfully' });
       } else {
         // Otherwise update the vote to the new type
         await prisma.answerVote.update({
           where: { id: existingVote.id },
-          data: { voteType: voteType as any }
+          data: { voteType }
         });
+        // Apply switch delta: up->down = -7, down->up = +7
+        const delta = existingVote.voteType === 'upvote' ? -7 : 7;
+        try {
+          await awardReputation(prisma as any, { userId: answer.authorId, action: voteType === 'upvote' ? 'answer_upvoted' : 'answer_downvoted', overridePoints: delta, entityType: 'answer', entityId: answerId, bypassCap: true, customDescription: 'Vote switched' });
+        } catch (e) {
+          console.warn('Reputation switch failed (vote updated):', e);
+        }
         return res.json({ message: 'Vote updated successfully' });
       }
     }
@@ -409,9 +439,16 @@ router.post('/:questionId/answers/:answerId/vote', authenticateToken, async (req
       data: {
         voterId: userId,
         answerId: answerId,
-        voteType: voteType as any
+        voteType
       }
     });
+    // New vote delta
+    const delta = voteType === 'upvote' ? 5 : -2;
+    try {
+      await awardReputation(prisma as any, { userId: answer.authorId, action: voteType === 'upvote' ? 'answer_upvoted' : 'answer_downvoted', overridePoints: delta, entityType: 'answer', entityId: answerId });
+    } catch (e) {
+      console.warn('Reputation award failed (new vote):', e);
+    }
 
     res.json({ message: 'Vote recorded successfully' });
 
@@ -427,7 +464,7 @@ router.post('/:questionId/answers/:answerId/vote', authenticateToken, async (req
 // Update a question (only by author)
 router.put('/:id', authenticateToken, async (req: any, res: any) => {
   try {
-    const questionId = parseInt(req.params.id);
+  const questionId = Number.parseInt(req.params.id, 10);
     const { title, body, tags } = req.body;
     const userId = req.user.userId;
 
@@ -454,7 +491,7 @@ router.put('/:id', authenticateToken, async (req: any, res: any) => {
     }
 
     // Update the question
-    const updatedQuestion = await prisma.question.update({
+    await prisma.question.update({
       where: { id: questionId },
       data: {
         title: title.trim(),
@@ -474,22 +511,9 @@ router.put('/:id', authenticateToken, async (req: any, res: any) => {
         if (typeof tagName === 'string' && tagName.trim()) {
           const trimmedTagName = tagName.trim().toLowerCase();
           
-          let tag = await prisma.tag.findUnique({
-            where: { name: trimmedTagName }
-          });
-
-          if (!tag) {
-            tag = await prisma.tag.create({
-              data: { name: trimmedTagName }
-            });
-          }
-
-          await prisma.questionTag.create({
-            data: {
-              questionId: questionId,
-              tagId: tag.id
-            }
-          });
+          const tag = await prisma.tag.findUnique({ where: { name: trimmedTagName } })
+            ?? await prisma.tag.create({ data: { name: trimmedTagName } });
+          await prisma.questionTag.create({ data: { questionId, tagId: tag.id } });
         }
       }
     }
@@ -540,7 +564,7 @@ router.put('/:id', authenticateToken, async (req: any, res: any) => {
 // Delete a question (only by author)
 router.delete('/:id', authenticateToken, async (req: any, res: any) => {
   try {
-    const questionId = parseInt(req.params.id);
+  const questionId = Number.parseInt(req.params.id, 10);
     const userId = req.user.userId;
 
     // Check if question exists and user is the author
@@ -575,8 +599,8 @@ router.delete('/:id', authenticateToken, async (req: any, res: any) => {
 // Update an answer (only by author)
 router.put('/:questionId/answers/:answerId', authenticateToken, async (req: any, res: any) => {
   try {
-    const questionId = parseInt(req.params.questionId);
-    const answerId = parseInt(req.params.answerId);
+  const questionId = Number.parseInt(req.params.questionId, 10);
+  const answerId = Number.parseInt(req.params.answerId, 10);
     const { content } = req.body;
     const userId = req.user.userId;
 
@@ -647,8 +671,8 @@ router.put('/:questionId/answers/:answerId', authenticateToken, async (req: any,
 // Delete an answer (only by author)
 router.delete('/:questionId/answers/:answerId', authenticateToken, async (req: any, res: any) => {
   try {
-    const questionId = parseInt(req.params.questionId);
-    const answerId = parseInt(req.params.answerId);
+  const questionId = Number.parseInt(req.params.questionId, 10);
+  const answerId = Number.parseInt(req.params.answerId, 10);
     const userId = req.user.userId;
 
     // Check if answer exists and belongs to the question

@@ -466,11 +466,16 @@ const QuestionForm = () => {
           <div className="flex justify-between items-center mt-12 pt-8 border-t border-gray-200">
             <button
               type="button"
-              onClick={() => setCurrentStep(prev => Math.max(1, prev - 1))}
-              disabled={currentStep === 1}
+              onClick={() => {
+                if (currentStep === 1) {
+                  router.push('/questions');
+                } else {
+                  setCurrentStep(prev => Math.max(1, prev - 1));
+                }
+              }}
               className={`flex items-center px-6 py-3 rounded-xl font-medium transition-all ${
                 currentStep === 1
-                  ? 'text-gray-400 cursor-not-allowed'
+                  ? 'text-red-600 bg-white border border-red-200 hover:bg-red-50 hover:text-red-700'
                   : 'text-primary hover:bg-primary hover:text-white'
               }`}
             >

@@ -840,6 +840,29 @@ export default function ProfilePage() {
             }}
           >
             <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--color-tertiary)' }}>📋 Personal Details</h3>
+            {/* Reputation Highlight */}
+            <div
+              className="relative overflow-hidden rounded-xl p-4 border mb-5 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg"
+              style={{
+                background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)',
+                borderColor: 'var(--color-primary)'
+              }}
+              aria-label="Reputation highlight"
+            >
+              <div className="flex items-center gap-4">
+                <div
+                  className="w-12 h-12 rounded-full flex items-center justify-center shrink-0"
+                  style={{ backgroundColor: 'rgba(255,255,255,0.15)' }}
+                  aria-hidden
+                >
+                  <span className="text-2xl">🏆</span>
+                </div>
+                <div className="flex-1">
+                  <div className="text-xs uppercase tracking-wide" style={{ color: 'var(--color-neutral)', opacity: 0.9 }}>Reputation</div>
+                  <div className="text-3xl font-extrabold leading-snug" style={{ color: 'var(--color-neutral)' }}>{profile.reputation}</div>
+                </div>
+              </div>
+            </div>
             
             <div className="space-y-4">
               <div aria-label="Email">
@@ -854,11 +877,6 @@ export default function ProfilePage() {
                   month: 'long', 
                   day: 'numeric' 
                 })}</p>
-              </div>
-
-              <div aria-label="Reputation">
-                <div className="block text-sm font-medium mb-1" style={{ color: 'var(--color-tertiary-light)' }}>Reputation</div>
-                <p style={{ color: 'var(--color-tertiary)' }}>{profile.reputation}</p>
               </div>
             </div>
           </div>

@@ -76,7 +76,14 @@ router.post('/questions/:questionId', authenticateToken, async (req: any, res: a
     const userId = req.user.userId as number;
     const questionId = Number(req.params.questionId);
     if (!questionId || Number.isNaN(questionId)) return res.status(400).json({ message: 'Invalid question id' });
+    const existed = await prisma.questionBookmark.findUnique({ where: { userId_questionId: { userId, questionId } } });
     const bookmark = await ensureQuestionBookmark(userId, questionId);
+    if (!existed) {
+      const question = await prisma.question.findUnique({ where: { id: questionId }, select: { authorId: true } });
+      if (question && question.authorId !== userId) {
+        await awardReputation(prisma as any, { userId: question.authorId, action: 'question_bookmarked', entityType: 'question', entityId: questionId });
+      }
+    }
     res.json({ message: 'Bookmarked', bookmark });
   } catch (err: any) {
     const status = err?.status || 500;
@@ -90,7 +97,14 @@ router.delete('/questions/:questionId', authenticateToken, async (req: any, res:
     const userId = req.user.userId as number;
     const questionId = Number(req.params.questionId);
     if (!questionId || Number.isNaN(questionId)) return res.status(400).json({ message: 'Invalid question id' });
+    const existed = await prisma.questionBookmark.findUnique({ where: { userId_questionId: { userId, questionId } } });
     await removeQuestionBookmark(userId, questionId);
+    if (existed) {
+      const question = await prisma.question.findUnique({ where: { id: questionId }, select: { authorId: true } });
+      if (question && question.authorId !== userId) {
+        await awardReputation(prisma as any, { userId: question.authorId, action: 'question_bookmarked', overridePoints: -10, entityType: 'question', entityId: questionId, bypassCap: true, customDescription: 'Bookmark removed' });
+      }
+    }
     res.json({ message: 'Removed' });
   } catch (err: any) {
     res.status(500).json({ message: 'Failed to remove bookmark' });
