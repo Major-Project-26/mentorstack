@@ -2,8 +2,10 @@ import 'dotenv/config';
 import amqp from 'amqplib';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import axios from 'axios';
+import http from 'http';
 
 const RABBITMQ_URL = process.env.RABBITMQ_URL || 'amqp://localhost';
+const PORT = process.env.PORT || 10000;
 const DIRECT_EXCHANGE = process.env.DIRECT_EXCHANGE || 'direct-exchange';
 const USER_QUESTIONS_QUEUE = process.env.USER_QUESTIONS_QUEUE || 'user-questions-queue';
 const AI_QUESTION_ROUTING_KEY = process.env.AI_QUESTION_ROUTING_KEY || 'ai-question';
@@ -64,6 +66,21 @@ async function start() {
   await ensureTopology(ch);
   console.log('🤖 Chatbot agent connected to RabbitMQ, consuming...');
   await ch.consume(USER_QUESTIONS_QUEUE, (msg) => msg && handleQuestion(ch, msg));
+
+  // Health check HTTP server for Render free tier
+  const server = http.createServer((req, res) => {
+    if (req.url === '/health' || req.url === '/') {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ status: 'ok', service: 'chatbot-agent', uptime: process.uptime() }));
+    } else {
+      res.writeHead(404);
+      res.end('Not Found');
+    }
+  });
+
+  server.listen(PORT, () => {
+    console.log(`🏥 Health check server running on port ${PORT}`);
+  });
 }
 
 start().catch((e) => {
