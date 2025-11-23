@@ -54,7 +54,9 @@ export default function ChatbotPage() {
 
   useEffect(() => {
     if (!token) return;
-    const ws = new WebSocket(`ws://localhost:5000/ws?token=${encodeURIComponent(token)}`);
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+    const wsUrl = backendUrl.replace('https://', 'wss://').replace('http://', 'ws://');
+    const ws = new WebSocket(`${wsUrl}/ws?token=${encodeURIComponent(token)}`);
     wsRef.current = ws;
     ws.onmessage = (e) => {
       try {
