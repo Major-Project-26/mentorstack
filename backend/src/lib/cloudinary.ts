@@ -1,5 +1,6 @@
 import { v2 as cloudinary } from 'cloudinary';
-import { CloudinaryStorage } from 'multer-storage-cloudinary';
+// @ts-ignore - No types available for multer-storage-cloudinary
+import CloudinaryStorage from 'multer-storage-cloudinary';
 import multer from 'multer';
 
 // Validate Cloudinary credentials
