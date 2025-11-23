@@ -216,12 +216,6 @@ junit.xml
 .vercel
 .netlify
 
-# Docker
-.dockerignore
-Dockerfile
-docker-compose.yml
-docker-compose.*.yml
-
 # Terraform
 *.tfstate
 *.tfstate.*
