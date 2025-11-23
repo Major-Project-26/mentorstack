@@ -73,7 +73,7 @@ export default function ChatbotPage() {
     setInput('');
     setMessages((prev) => [...prev, { role: 'user', text, ts: new Date().toISOString() }]);
     try {
-      await fetch('http://localhost:5000/api/chat/ask', {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/chat/ask`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

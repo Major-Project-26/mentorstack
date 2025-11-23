@@ -1,6 +1,7 @@
 "use client";
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { authAPI } from './auth-api';
+import { API_URL } from './api-config';
 
 type AiItem = { id: number; prompt: string; response: string; timestamp: string };
 
@@ -18,7 +19,7 @@ export function useAiHistory(initialLimit = 50) {
       const params = new URLSearchParams();
       params.set('limit', String(initialLimit));
       if (cursor) params.set('cursor', String(cursor));
-      const res = await fetch(`http://localhost:5000/api/ai/history?${params.toString()}`, {
+      const res = await fetch(`${API_URL}/ai/history?${params.toString()}`, {
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,

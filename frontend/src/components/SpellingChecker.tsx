@@ -116,7 +116,7 @@ const SpellingChecker = forwardRef<HTMLTextAreaElement, Props>(({
 
         setIsChecking(true);
         try {
-            const response = await axios.post('http://localhost:5000/api/spellcheck', { text });
+            const response = await axios.post(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/spellcheck`, { text });
             let suggestions = Array.isArray(response.data?.suggestions) 
                 ? response.data.suggestions 
                 : [];

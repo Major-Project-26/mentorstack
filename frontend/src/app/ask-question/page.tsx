@@ -25,7 +25,7 @@ const QuestionForm = () => {
     setSuggestLoading(true);
     setSuggestedTags([]);
     try {
-      const res = await fetch("http://localhost:5000/api/rectags", {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/rectags`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ question: title, content: description }),
@@ -78,7 +78,7 @@ const QuestionForm = () => {
 
     setRephraseLoading(true);
     try {
-      const response = await fetch("http://localhost:5000/api/rephrase", {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/rephrase`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

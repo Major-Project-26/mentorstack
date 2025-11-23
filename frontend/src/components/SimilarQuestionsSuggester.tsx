@@ -38,7 +38,7 @@ export default function SimilarQuestionsSuggester({
 
         setIsLoading(true);
         try {
-            const response = await axios.post('http://localhost:5000/api/similar-questions', {
+            const response = await axios.post(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/similar-questions`, {
                 questionText: text
             });
 

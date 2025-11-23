@@ -189,7 +189,7 @@ function SignupForm() {
           const avatarFormData = new FormData();
           avatarFormData.append('avatar', formData.avatar);
 
-          const avatarResponse = await fetch('http://localhost:5000/api/upload/avatar', {
+          const avatarResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/upload/avatar`, {
             method: 'POST',
             headers: {
               'Authorization': `Bearer ${response.token}`

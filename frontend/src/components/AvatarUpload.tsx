@@ -86,7 +86,7 @@ export default function AvatarUpload({
       const formData = new FormData();
       formData.append('avatar', file);
 
-      const response = await fetch('http://localhost:5000/api/upload/avatar', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/upload/avatar`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -134,7 +134,7 @@ export default function AvatarUpload({
         throw new Error('Not authenticated');
       }
 
-      const response = await fetch('http://localhost:5000/api/upload/avatar', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/upload/avatar`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
