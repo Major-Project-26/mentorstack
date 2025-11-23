@@ -17,7 +17,7 @@ const Layout = ({
   sidebarProps = {},
   navbarProps = {},
 }: LayoutProps) => {
-  const [sidebarOpen, setSidebarOpen] = useState(true); // Default to true (visible)
+  const [sidebarOpen, setSidebarOpen] = useState(false); // Default to false on mobile
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
@@ -29,15 +29,30 @@ const Layout = ({
 
   return (
     <div className="flex h-screen bg-[var(--color-neutral-dark)] text-[var(--color-tertiary)]">
-      {/* Sidebar - Shows by default when showSidebar is true */}
+      {/* Sidebar - Hidden on mobile by default, overlay on mobile */}
       {showSidebar && (
-        <div className={`${sidebarOpen ? "block" : "hidden"}`}>
-          <Sidebar
-            isOpen={sidebarOpen}
-            onClose={closeSidebar}
-            {...sidebarProps}
-          />
-        </div>
+        <>
+          {/* Mobile overlay */}
+          {sidebarOpen && (
+            <div 
+              className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+              onClick={closeSidebar}
+            />
+          )}
+          {/* Sidebar */}
+          <div className={`
+            fixed lg:static inset-y-0 left-0 z-50
+            transform transition-transform duration-300 ease-in-out
+            ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+            ${sidebarOpen ? 'block' : 'hidden lg:block'}
+          `}>
+            <Sidebar
+              isOpen={sidebarOpen}
+              onClose={closeSidebar}
+              {...sidebarProps}
+            />
+          </div>
+        </>
       )}
 
       {/* Main Content - Takes full width when sidebar is hidden */}

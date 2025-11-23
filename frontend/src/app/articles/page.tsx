@@ -134,12 +134,12 @@ function ArticlesPageContent() {
   return (
     <Layout>
       <div className="min-h-screen" style={{ backgroundColor: 'var(--color-neutral-dark)' }}>
-        <div className="max-w-7xl mx-auto px-6 py-8">
-          <div className="flex justify-between items-center mb-8">
-            <h1 className="text-4xl font-bold" style={{ color: 'var(--color-tertiary)' }}>Articles</h1>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-8">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 sm:mb-8">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold" style={{ color: 'var(--color-tertiary)' }}>Articles</h1>
             <Link href="/create-article">
               <button
-                className="px-6 py-3 flex flex-row justify-center items-center gap-1 rounded-lg transition-colors font-medium text-white hover:opacity-90"
+                className="px-4 sm:px-6 py-2 sm:py-3 flex flex-row justify-center items-center gap-1 rounded-lg transition-colors font-medium text-sm sm:text-base text-white hover:opacity-90"
                 style={{ backgroundColor: 'var(--color-primary)' }}
               >
                 {/* <Plus className="w-4 h-4 text-black drop-shadow-lg" />*/} Create a Post
@@ -213,10 +213,10 @@ function ArticlesPageContent() {
                   borderColor: 'var(--color-surface-dark)'
                 }}
               >
-                <div className="flex">
+                <div className="flex flex-col sm:flex-row">
                   {/* Content */}
-                  <div className="flex-1 p-6">
-                    <div className="flex items-center gap-2 mb-3">
+                  <div className="flex-1 p-4 sm:p-6">
+                    <div className="flex flex-wrap items-center gap-2 mb-3">
                       <span className="text-xs" style={{ color: 'var(--color-tertiary-light)' }}>
                         📅 {new Date(article.createdAt).toLocaleDateString('en-US', {
                           year: 'numeric',
@@ -226,11 +226,11 @@ function ArticlesPageContent() {
                       </span>
                     </div>
 
-                    <h2 className="text-xl font-bold mb-3 leading-tight" style={{ color: 'var(--color-tertiary)' }}>
+                    <h2 className="text-lg sm:text-xl font-bold mb-2 sm:mb-3 leading-tight" style={{ color: 'var(--color-tertiary)' }}>
                       {article.title}
                     </h2>
 
-                    <p className="mb-4 line-clamp-3 leading-relaxed" style={{ color: 'var(--color-tertiary-light)' }}>
+                    <p className="mb-3 sm:mb-4 line-clamp-2 sm:line-clamp-3 text-sm sm:text-base leading-relaxed" style={{ color: 'var(--color-tertiary-light)' }}>
                       {article.content.replace(/[#*`]/g, '').substring(0, 180)}...
                     </p>
 
@@ -313,7 +313,7 @@ function ArticlesPageContent() {
 
                   {/* Image with Preview */}
                   <div
-                    className="w-48 h-40 bg-gradient-to-br from-teal-100 to-emerald-100 flex-shrink-0 relative group"
+                    className="w-full sm:w-48 h-40 sm:h-40 bg-gradient-to-br from-teal-100 to-emerald-100 flex-shrink-0 relative group"
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();

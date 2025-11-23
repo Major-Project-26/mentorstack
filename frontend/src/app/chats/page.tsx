@@ -83,14 +83,14 @@ function ChatsPageContent() {
 
     return (
         <Layout>
-            <div className="h-full bg-neutral-dark flex flex-col items-center justify-center p-1">
-                <div className="text-3xl font-bold mb-4 text-gray-900 w-full text-left p-4 rounded-t-2xl" style={{ backgroundColor: "var(--color-neutral-dark)" }}>
+            <div className="h-full bg-neutral-dark flex flex-col p-2 md:p-4">
+                <div className="text-2xl md:text-3xl font-bold mb-2 md:mb-4 text-gray-900 w-full text-left p-2 md:p-4 rounded-t-2xl" style={{ backgroundColor: "var(--color-neutral-dark)" }}>
                     Chats
                 </div>
-                <div className="w-full max-w-7xl h-5/6 flex border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
+                <div className="w-full max-w-7xl mx-auto flex-1 flex flex-col md:flex-row border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
 
                     {/* Chat List */}
-                    <div className="w-1/3 border-r border-gray-200 flex flex-col" style={{ backgroundColor: "var(--color-neutral)" }}>
+                    <div className={`${activeConnectionId ? 'hidden md:flex' : 'flex'} w-full md:w-1/3 border-r border-gray-200 flex-col`} style={{ backgroundColor: "var(--color-neutral)" }}>
                         <div className="p-4 border-b border-gray-200">
                             <input
                                 type="text"
@@ -148,11 +148,17 @@ function ChatsPageContent() {
                     </div>
 
                     {/* Chat Window */}
-                    <div className="flex-1 flex flex-col" style={{ backgroundColor: "var(--color-neutral)" }}>
+                    <div className={`${activeConnectionId ? 'flex' : 'hidden md:flex'} flex-1 flex-col`} style={{ backgroundColor: "var(--color-neutral)" }}>
                         {activeConnectionId ? (
                             <>
                                 {/* Header */}
-                                <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
+                                <div className="flex items-center justify-between px-2 md:px-4 py-3 border-b border-gray-200">
+                                    <button 
+                                        onClick={() => selectConnection(0)}
+                                        className="md:hidden mr-2 p-2 hover:bg-gray-100 rounded"
+                                    >
+                                        ←
+                                    </button>
                                     <div className="flex items-center space-x-3">
                                         <div className="w-10 h-10 flex items-center justify-center rounded-full text-white font-semibold"
                                             style={{ backgroundColor: "var(--color-primary)" }}>
