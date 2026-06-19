@@ -151,7 +151,7 @@ Reason:
 - it shows the backend can serve many users at the same time
 - it demonstrates that messages are not lost when a client disconnects
 
-### 5.4 AI Features
+### 5. 6 AI Features
 
 The project includes multiple AI-powered backend utilities:
 
@@ -162,26 +162,7 @@ The project includes multiple AI-powered backend utilities:
 - spelling and grammar checking
 - tag suggestion
 
-## 6. Performance Metrics
-
-- the platform was monitored using real usage-style metrics
-- frontend and backend behavior were observed with performance dashboards
-- the project is not only code-complete but also performance-aware
-- metrics were used to understand load behavior, user engagement, and navigation quality
-
-Reported indicators include:
-
-- page load around 0.7 seconds in one dashboard view
-- median page load around 2.06 seconds in another view
-- median start render around 1.03 seconds
-- bounce rate around 40.6 percent in one dashboard view
-- bounce rate around 57.1 percent in another view
-- around 479K sessions
-- average session length around 17 minutes
-- around 2 pages per session
-- around 2.7 million page views in the dashboard snapshot
-
-## 7. Error Handling Strategy
+## 6. Error Handling Strategy
 
 The backend uses practical error handling rather than vague failure messages.
 
@@ -195,7 +176,7 @@ Key strategies:
 - treat AI logging failures as non-fatal so core user flows continue
 - retry database operations when the cloud database is waking from inactivity
 
-## 8. Security Checklist
+## 7. Security Checklist
 
 Security is a major strength of the backend implementation.
 
@@ -218,7 +199,7 @@ Why this is important:
 - it prevents common account and content manipulation issues
 - it shows the backend is designed with real-world misuse in mind
 
-## 9. API Reference Summary
+## 8. API Reference Summary
 
 This section shows the breadth of backend coverage.
 
@@ -235,7 +216,7 @@ This section shows the breadth of backend coverage.
 | Badges | Earn, display, manage | Progress tracking |
 | Admin | Users, content, communities, mentorship, tags, badges, analytics | Platform oversight |
 
-## 10. Admin Dashboard Stats
+## 9. Admin Dashboard Stats
 
 The admin panel is strong evidence that the backend was built properly. It is backed by real queries and aggregated metrics.
 
@@ -251,7 +232,7 @@ Important analytics exposed by the backend:
 - community growth and contributor rankings
 - tag usage and content distribution
 
-## 11. Docker and RabbitMQ
+## 10. Docker and RabbitMQ
 
 Docker was used to make the backend infrastructure more consistent and easier to run.
 
@@ -264,7 +245,7 @@ Why Docker matters here:
 
 RabbitMQ specifically benefits from Docker because the message broker becomes easier to start, restart, and share across machines. That is especially helpful in a project with real-time discussion and chatbot queueing.
 
-## 12. Summary of Backend Implementation
+## 11. Summary of Backend Implementation
 
 - the system has a real database schema with multiple related entities
 - the project enforces security through JWT, roles, and middleware
@@ -276,7 +257,7 @@ RabbitMQ specifically benefits from Docker because the message broker becomes ea
 - the project includes monitoring-style metrics and operational thinking
 - Docker improves service reproducibility, especially for RabbitMQ and related services
 
-## 13. Conclusion
+## 12. Conclusion
 
 This project demonstrates a properly implemented backend because it combines architecture, database design, security, asynchronous processing, real-time communication, analytics, and operational reliability in one system. The added evidence sections make it easier to present the work in a placement setting and show that the backend was built with production concerns in mind.
 
